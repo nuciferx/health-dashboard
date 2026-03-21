@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Health Dashboard — nucifer</title>
   <script src="config.js" onerror="console.warn('config.js not found')"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -703,10 +707,12 @@ const SK = {
   HIST:   'hd_history',
   GARMIN: 'hd_garmin_json',
 }
-const OURA_BASE      = 'https://api.ouraring.com/v2'
-const GEMINI_MODEL   = 'gemini-2.0-flash'
-const GEMINI_URL     = () =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${recall(SK.CLAUDE)}`
+// ── Proxy config ──────────────────────────────────────────────────
+// ถ้า HD_CONFIG.PROXY_URL ถูกตั้งค่า → ใช้ Cloudflare Worker (ซ่อน key)
+// ถ้าไม่มี → ส่ง request ตรง (ต้องมี token ใน localStorage)
+const PROXY_URL      = (window.HD_CONFIG || {}).PROXY_URL || ''   // e.g. 'https://health-proxy.xxx.workers.dev'
+const OURA_BASE      = PROXY_URL ? `${PROXY_URL}/oura` : 'https://api.ouraring.com/v2'
+const GEMINI_PROXY   = PROXY_URL ? `${PROXY_URL}/gemini` : ''
 const GARMIN_SERVER  = 'http://localhost:5001/garmin'
 const GARMIN_TIMEOUT = 4000  // ms รอ local server
 
@@ -859,9 +865,8 @@ function setTravel(level, el) {
 async function ouraFetch(path, params = {}) {
   const url = new URL(OURA_BASE + path)
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${recall(SK.OURA)}` }
-  })
+  const headers = PROXY_URL ? {} : { Authorization: `Bearer ${recall(SK.OURA)}` }
+  const res = await fetch(url.toString(), { headers })
   if (!res.ok) throw new Error(`Oura ${res.status}: Token ไม่ถูกต้อง หรือ API ผิดพลาด`)
   return res.json()
 }
@@ -928,14 +933,24 @@ GARMIN (ถ้ามี):
 }
 
 async function askClaude(prompt) {
-  const res = await fetch(GEMINI_URL(), {
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
+  })
+
+  let endpoint
+  if (GEMINI_PROXY) {
+    endpoint = GEMINI_PROXY                      // Worker proxy (key อยู่ใน Worker)
+  } else {
+    const GEMINI_MODEL = 'gemini-2.0-flash'
+    endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${recall(SK.CLAUDE)}`
+  }
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
-    }),
+    body,
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
@@ -1332,6 +1347,15 @@ function init() {
 }
 
 init()
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.warn('SW registration failed:', err))
+  })
+}
 </script>
 </body>
 </html>

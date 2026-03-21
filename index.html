@@ -659,14 +659,20 @@
 
       <!-- Garmin -->
       <div class="garmin-card">
-        <div class="section-title">GARMIN</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="section-title" style="margin:0">GARMIN</div>
+          <div id="garmin-server-badge" style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace">
+            ⏳ ตรวจสอบ server...
+          </div>
+        </div>
         <div id="garmin-display">
           <div class="mcard-label">ไม่มีข้อมูล Garmin</div>
         </div>
-        <div style="margin-top:0.875rem">
-          <label>Paste Garmin JSON</label>
+        <div style="margin-top:0.875rem" id="garmin-paste-section">
+          <label>Paste Garmin JSON <span style="color:var(--muted);font-size:.8em">(ถ้า server ไม่รัน)</span></label>
           <textarea id="garmin-paste" style="height:72px;margin-bottom:0.5rem" placeholder='{"date":"...","body_battery":75,...}'></textarea>
-          <button class="btn btn-outline btn-sm" onclick="loadGarmin()">โหลด Garmin Data</button>
+          <button class="btn btn-outline btn-sm" onclick="loadGarmin()">โหลด</button>
+          <button class="btn btn-outline btn-sm" onclick="retryGarminServer()" style="margin-left:.5rem">↻ ลอง Server</button>
         </div>
       </div>
 
@@ -694,10 +700,12 @@ const SK = {
   HIST:   'hd_history',
   GARMIN: 'hd_garmin_json',
 }
-const OURA_BASE    = 'https://api.ouraring.com/v2'
-const GEMINI_MODEL = 'gemini-2.0-flash'
-const GEMINI_URL   = () =>
+const OURA_BASE      = 'https://api.ouraring.com/v2'
+const GEMINI_MODEL   = 'gemini-2.0-flash'
+const GEMINI_URL     = () =>
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${recall(SK.CLAUDE)}`
+const GARMIN_SERVER  = 'http://localhost:5001/garmin'
+const GARMIN_TIMEOUT = 4000  // ms รอ local server
 
 const SYSTEM_PROMPT = `คุณคือโค้ชสุขภาพส่วนตัวที่เชี่ยวชาญด้านการฟื้นฟูร่างกายและการวิ่ง
 คุณพูดภาษาไทย กระชับ ตรงประเด็น ไม่อ้อมค้อม
@@ -1106,9 +1114,39 @@ function loadGarmin() {
     renderGarmin(garminData)
     if (ouraData) renderActivity(ouraData, garminData)
     document.getElementById('garmin-paste').value = ''
+    setGarminBadge(false, 'manual')
     alert('โหลด Garmin สำเร็จ — กด Refresh เพื่ออัพเดต AI Coach')
   } catch {
     alert('JSON ไม่ถูกต้อง')
+  }
+}
+
+async function retryGarminServer() {
+  const badge = document.getElementById('garmin-server-badge')
+  badge.textContent = '⏳ กำลังเชื่อมต่อ...'
+  const data = await fetchGarminAuto()
+  if (data) {
+    garminData = data
+    renderGarmin(garminData)
+    if (ouraData) renderActivity(ouraData, garminData)
+    setGarminBadge(true)
+  } else {
+    setGarminBadge(false)
+  }
+}
+
+function setGarminBadge(online, mode = null) {
+  const badge = document.getElementById('garmin-server-badge')
+  if (!badge) return
+  if (mode === 'manual') {
+    badge.style.color = 'var(--caution)'
+    badge.textContent = '📋 Manual paste'
+  } else if (online) {
+    badge.style.color = 'var(--optimal)'
+    badge.textContent = '🟢 Auto (localhost:5001)'
+  } else {
+    badge.style.color = 'var(--muted)'
+    badge.textContent = '⚫ Server ไม่รัน'
   }
 }
 
@@ -1190,13 +1228,42 @@ function saveHistory(oura, garmin, coaching) {
   store(SK.HIST, updated)
 }
 
+// ── Garmin auto-fetch from local server ──────────────────────────
+async function fetchGarminAuto() {
+  const ctrl = new AbortController()
+  const tid  = setTimeout(() => ctrl.abort(), GARMIN_TIMEOUT)
+  try {
+    const res = await fetch(GARMIN_SERVER, { signal: ctrl.signal })
+    clearTimeout(tid)
+    if (!res.ok) return null
+    const data = await res.json()
+    if (data.error) return null
+    store(SK.GARMIN, data)  // cache ไว้ใน localStorage
+    return data
+  } catch {
+    clearTimeout(tid)
+    return null
+  }
+}
+
 // ── Main load ────────────────────────────────────────────────────
 async function loadDashboard() {
   document.getElementById('hdr-date').textContent =
     new Date().toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
 
+  setStatus('load', 'กำลังโหลด...')
+
+  // ── Garmin: ลอง local server ก่อน → fallback localStorage ──
+  const garminAuto = await fetchGarminAuto()
+  if (garminAuto) {
+    garminData = garminAuto
+    setGarminBadge(true)
+  } else {
+    garminData = recall(SK.GARMIN) || null
+    setGarminBadge(false, garminData ? 'manual' : null)
+  }
+
   setStatus('load', 'กำลังโหลด Oura...')
-  garminData = recall(SK.GARMIN) || null
 
   // ── Oura ──
   let fetchFailed = false

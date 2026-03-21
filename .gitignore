@@ -1,0 +1,12 @@
+# ห้าม commit ข้อมูลส่วนตัว
+.env
+*.env
+secrets.json
+credentials.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/

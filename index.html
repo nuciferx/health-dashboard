@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Health Dashboard — nucifer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    /* ── Variables ───────────────────────────────────── */
+    :root {
+      --bg:      #0a0a0a;
+      --bg2:     #111111;
+      --bg3:     #1a1a1a;
+      --border:  #2a2a2a;
+      --accent:  #c8f135;
+      --text:    #e8e8e8;
+      --muted:   #666;
+      --optimal: #35f18a;
+      --good:    #c8f135;
+      --caution: #ffaa00;
+      --rest:    #ff5c35;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans Thai', sans-serif;
+      font-size: 15px;
+      min-height: 100vh;
+    }
+
+    /* ── Setup Screen ────────────────────────────────── */
+    #setup-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .setup-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 460px;
+    }
+    .setup-logo {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 3rem;
+      color: var(--accent);
+      letter-spacing: 4px;
+    }
+    .setup-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 2rem;
+      margin-top: 0.25rem;
+    }
+    .form-group { margin-bottom: 1.25rem; }
+    label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 100px; }
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 0.85rem 1.5rem;
+      font-family: 'Noto Sans Thai', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.98); }
+    .btn-outline {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; width: auto; }
+    #setup-err {
+      margin-top: 0.75rem;
+      color: var(--rest);
+      font-size: 0.82rem;
+      display: none;
+    }
+
+    /* ── Dashboard ───────────────────────────────────── */
+    #dashboard {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+    }
+    .logo {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.75rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+    }
+    .header-date {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .dot.live   { background: var(--optimal); animation: pulse 2s infinite; }
+    .dot.err    { background: var(--rest); }
+    .dot.load   { background: var(--caution); }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    /* Vital Strip */
+    .vital-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: var(--border);
+      gap: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+    .vital-card {
+      background: var(--bg);
+      padding: 1.4rem 1.25rem;
+      text-align: center;
+      cursor: default;
+      transition: background 0.2s;
+      animation: fadeUp 0.5s ease both;
+    }
+    .vital-card:hover { background: var(--bg2); }
+    .vital-label {
+      font-size: 0.67rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .vital-score {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 3.2rem;
+      line-height: 1;
+      margin-bottom: 0.2rem;
+    }
+    .vital-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .vital-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border);
+      margin-top: 0.6rem;
+      overflow: hidden;
+    }
+    .vital-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 1s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    /* Main 2-col */
+    .main {
+      display: grid;
+      grid-template-columns: 40% 60%;
+      flex: 1;
+    }
+
+    /* AI Coach */
+    .ai-col {
+      padding: 1.5rem;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .section-title {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.875rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .coach-summary {
+      line-height: 1.75;
+      font-size: 0.9rem;
+      min-height: 3rem;
+    }
+    .cursor::after {
+      content: '|';
+      color: var(--accent);
+      animation: blink 0.7s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .workout-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .workout-title {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.75rem;
+      letter-spacing: 2px;
+      margin-bottom: 0.5rem;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.6rem 0;
+    }
+    .tag {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent);
+    }
+    .workout-detail {
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .warnings {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .warn-item {
+      background: rgba(255,92,53,0.08);
+      border: 1px solid rgba(255,92,53,0.25);
+      border-radius: 8px;
+      padding: 0.55rem 0.875rem;
+      font-size: 0.8rem;
+      color: var(--rest);
+    }
+    .sleep-tip {
+      background: rgba(200,241,53,0.05);
+      border: 1px solid rgba(200,241,53,0.12);
+      border-radius: 8px;
+      padding: 0.75rem 0.875rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .sleep-tip strong { color: var(--accent); }
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* Metrics col */
+    .metrics-col {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+    }
+    .metric-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .mcard {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+      animation: fadeUp 0.4s ease both;
+    }
+    .mcard-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .mcard-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.5rem;
+    }
+    .mcard-unit {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-left: 0.2rem;
+    }
+    .mcard-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* Sleep stages */
+    .stages {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+      height: 80px;
+    }
+    .stage-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .stage-bar-bg {
+      width: 100%;
+      background: var(--bg3);
+      border-radius: 4px;
+      height: 60px;
+      overflow: hidden;
+      position: relative;
+    }
+    .stage-bar-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-radius: 4px;
+      transition: height 1s cubic-bezier(0.22,1,0.36,1);
+    }
+    .stage-lbl {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+    .stage-val {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      margin-top: 0.15rem;
+    }
+
+    /* Chart */
+    .chart-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 1.25rem;
+      margin-top: 0.75rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Travel */
+    .travel-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+    }
+    .travel-opts {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+    }
+    .travel-btn {
+      flex: 1;
+      padding: 0.6rem 0.5rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'Noto Sans Thai', sans-serif;
+      font-size: 0.78rem;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.4;
+      transition: all 0.2s;
+    }
+    .travel-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .travel-btn.active {
+      background: rgba(200,241,53,0.08);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Garmin */
+    .garmin-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    /* Error */
+    .err-card {
+      background: rgba(255,92,53,0.07);
+      border: 1px solid rgba(255,92,53,0.25);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+      color: var(--rest);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .footer-sync {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .footer-btns { display: flex; gap: 0.6rem; align-items: center; }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .vital-strip { grid-template-columns: repeat(2, 1fr); }
+      .main { grid-template-columns: 1fr; }
+      .ai-col { border-right: none; border-bottom: 1px solid var(--border); }
+      .metric-row { grid-template-columns: 1fr; }
+      .travel-opts { flex-wrap: wrap; }
+    }
+    @media (max-width: 480px) {
+      .vital-score { font-size: 2.4rem; }
+      .header-date { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ════════════════════════════════════════════ -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-logo">HEALTH</div>
+    <div class="setup-sub">Personal Health Dashboard — ตั้งค่าครั้งแรก</div>
+
+    <div class="form-group">
+      <label>Oura Personal Access Token</label>
+      <input type="password" id="oura-token" placeholder="eyJhbGciOi..." autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label>Gemini API Key</label>
+      <input type="password" id="claude-key" placeholder="AIzaSy..." autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label>Garmin JSON <span style="color:var(--muted);text-transform:none;font-size:0.8em">(optional — รัน garmin_export.py แล้ว paste)</span></label>
+      <textarea id="garmin-setup" placeholder='{"date":"2026-03-21","body_battery":75,...}'></textarea>
+    </div>
+
+    <button class="btn" onclick="setupSave()">บันทึกและเริ่มใช้งาน</button>
+    <div id="setup-err"></div>
+  </div>
+</div>
+
+<!-- ══ MAIN DASHBOARD ══════════════════════════════════════════ -->
+<div id="dashboard">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">HEALTH</div>
+    <div class="header-date" id="hdr-date">—</div>
+    <div class="header-status">
+      <div class="dot load" id="status-dot"></div>
+      <span id="status-txt">กำลังโหลด...</span>
+    </div>
+  </header>
+
+  <!-- Vital Strip -->
+  <div class="vital-strip" id="vital-strip">
+    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
+    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
+    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
+    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <!-- AI Coach (left 40%) -->
+    <section class="ai-col" id="ai-col">
+      <div class="section-title">AI COACH</div>
+      <div class="loading-box">
+        <div class="spinner"></div>
+        <span>กำลังวิเคราะห์สภาพร่างกาย...</span>
+      </div>
+    </section>
+
+    <!-- Metrics (right 60%) -->
+    <section class="metrics-col">
+
+      <!-- Sleep -->
+      <div>
+        <div class="section-title">SLEEP</div>
+        <div class="mcard">
+          <div class="mcard-label">การนอนคืนที่ผ่านมา</div>
+          <div class="stages" id="sleep-stages">
+            <div class="skeleton" style="flex:1;height:60px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <div>
+        <div class="section-title">ACTIVITY</div>
+        <div class="metric-row" id="activity-metrics">
+          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+        </div>
+      </div>
+
+      <!-- 7-Day Trend -->
+      <div>
+        <div class="section-title">7-DAY TREND</div>
+        <div class="chart-card">
+          <canvas id="trend-chart" style="width:100%;height:90px;display:block"></canvas>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#35f18a"></div>Readiness
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#c8f135"></div>Sleep
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Travel -->
+      <div class="travel-card">
+        <div class="section-title">การเดินทางวันนี้</div>
+        <div class="travel-opts">
+          <div class="travel-btn active" onclick="setTravel(0,this)">🏠 น้อย<br><small>WFH</small></div>
+          <div class="travel-btn" onclick="setTravel(1,this)">🚗 ปานกลาง</div>
+          <div class="travel-btn" onclick="setTravel(2,this)">✈️ เยอะมาก<br><small>เดินทางทั้งวัน</small></div>
+        </div>
+      </div>
+
+      <!-- Garmin -->
+      <div class="garmin-card">
+        <div class="section-title">GARMIN</div>
+        <div id="garmin-display">
+          <div class="mcard-label">ไม่มีข้อมูล Garmin</div>
+        </div>
+        <div style="margin-top:0.875rem">
+          <label>Paste Garmin JSON</label>
+          <textarea id="garmin-paste" style="height:72px;margin-bottom:0.5rem" placeholder='{"date":"...","body_battery":75,...}'></textarea>
+          <button class="btn btn-outline btn-sm" onclick="loadGarmin()">โหลด Garmin Data</button>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-sync" id="footer-sync">—</div>
+    <div class="footer-btns">
+      <button class="btn btn-outline btn-sm" onclick="openSettings()">⚙ ตั้งค่า</button>
+      <button class="btn btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+'use strict'
+
+// ── Config ──────────────────────────────────────────────────────
+const SK = {
+  OURA:   'hd_oura_token',
+  CLAUDE: 'hd_gemini_key',
+  HIST:   'hd_history',
+  GARMIN: 'hd_garmin_json',
+}
+const OURA_BASE    = 'https://api.ouraring.com/v2'
+const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_URL   = () =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${recall(SK.CLAUDE)}`
+
+const SYSTEM_PROMPT = `คุณคือโค้ชสุขภาพส่วนตัวที่เชี่ยวชาญด้านการฟื้นฟูร่างกายและการวิ่ง
+คุณพูดภาษาไทย กระชับ ตรงประเด็น ไม่อ้อมค้อม
+ให้คำแนะนำเชิงรุกตามข้อมูลที่ได้รับ โดยใช้หลัก:
+- HRV และ Readiness Score เป็นตัวชี้วัดหลัก
+- ถ้า Readiness < 60 → แนะนำพักหรือ easy run เท่านั้น
+- นอนน้อยกว่า 6 ชั่วโมง → ห้ามวิ่ง threshold/interval
+- Body Battery < 30 → แนะนำ recovery day
+- รวม travel fatigue เข้าในการประเมินด้วย
+
+ตอบในรูปแบบ JSON เท่านั้น ไม่มีข้อความอื่นนอก JSON:
+{
+  "status": "optimal|good|caution|rest",
+  "summary": "สรุปสภาพร่างกายวันนี้ใน 2 ประโยค",
+  "recommendation": "แนะนำการออกกำลังกายวันนี้",
+  "workout_plan": {
+    "type": "easy_run|tempo|interval|strength|rest|yoga",
+    "duration_min": 0,
+    "intensity": "Z1|Z2|Z3|Z4|Z5|rest",
+    "detail": "รายละเอียดเพิ่มเติม"
+  },
+  "warnings": ["คำเตือนถ้ามี"],
+  "sleep_tip": "คำแนะนำการนอนสำหรับคืนนี้"
+}`
+
+// ── State ────────────────────────────────────────────────────────
+let travelLevel = 0
+let ouraData    = null
+let garminData  = null
+
+// ── Storage ──────────────────────────────────────────────────────
+const store  = (k, v)  => localStorage.setItem(k, typeof v === 'object' ? JSON.stringify(v) : v)
+const recall = k => {
+  const v = localStorage.getItem(k)
+  if (!v) return null
+  try { return JSON.parse(v) } catch { return v }
+}
+
+// ── Date helpers ─────────────────────────────────────────────────
+const todayStr   = () => new Date().toISOString().split('T')[0]
+const daysAgoStr = n => {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString().split('T')[0]
+}
+
+// ── Color system ─────────────────────────────────────────────────
+function zoneColor(type, val) {
+  if (val == null) return '#666'
+  const thresholds = {
+    readiness: [[85,'#35f18a'],[70,'#c8f135'],[55,'#ffaa00'],[0,'#ff5c35']],
+    sleep:     [[80,'#35f18a'],[65,'#c8f135'],[50,'#ffaa00'],[0,'#ff5c35']],
+    hrv:       [[70,'#35f18a'],[50,'#c8f135'],[30,'#ffaa00'],[0,'#ff5c35']],
+    battery:   [[75,'#35f18a'],[50,'#c8f135'],[30,'#ffaa00'],[0,'#ff5c35']],
+  }
+  const tbl = thresholds[type] || thresholds.readiness
+  for (const [threshold, color] of tbl) {
+    if (val >= threshold) return color
+  }
+  return '#ff5c35'
+}
+function statusColor(s) {
+  return {optimal:'#35f18a',good:'#c8f135',caution:'#ffaa00',rest:'#ff5c35'}[s] || '#666'
+}
+function statusLabel(s) {
+  return {optimal:'Optimal — พร้อมสูงสุด',good:'Good — พร้อมดี',caution:'Caution — ระวัง',rest:'Rest — พักผ่อน'}[s] || s
+}
+function workoutLabel(t) {
+  return {easy_run:'Easy Run',tempo:'Tempo Run',interval:'Interval Training',
+          strength:'Strength Training',rest:'Rest Day',yoga:'Yoga / Stretch'}[t] || t || '—'
+}
+
+// ── Status bar ───────────────────────────────────────────────────
+function setStatus(cls, txt) {
+  document.getElementById('status-dot').className = 'dot ' + cls
+  document.getElementById('status-txt').textContent = txt
+}
+
+// ── Animations ───────────────────────────────────────────────────
+function countUp(el, target, ms = 900) {
+  if (typeof target !== 'number') { el.textContent = target; return }
+  const start = Date.now()
+  const tick = () => {
+    const p = Math.min(1, (Date.now() - start) / ms)
+    const e = 1 - Math.pow(1 - p, 3)
+    el.textContent = Math.round(e * target)
+    if (p < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
+function typewriter(el, text, spd = 28, onDone = null) {
+  let i = 0
+  el.textContent = ''
+  const tick = () => {
+    if (i < text.length) { el.textContent = text.slice(0, ++i); setTimeout(tick, spd) }
+    else if (onDone) onDone()
+  }
+  tick()
+}
+
+function formatMin(seconds) {
+  if (!seconds) return '—'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  return h ? `${h}ชม.${m}น.` : `${m}น.`
+}
+
+// ── Setup ────────────────────────────────────────────────────────
+function setupSave() {
+  const oura   = document.getElementById('oura-token').value.trim()
+  const claude = document.getElementById('claude-key').value.trim()
+  const garmin = document.getElementById('garmin-setup').value.trim()
+  const errEl  = document.getElementById('setup-err')
+
+  if (!oura)   { showErr('กรุณากรอก Oura Token'); return }
+  if (!claude) { showErr('กรุณากรอก Claude API Key'); return }
+
+  if (garmin) {
+    try { store(SK.GARMIN, JSON.parse(garmin)) }
+    catch { showErr('Garmin JSON ไม่ถูกต้อง'); return }
+  }
+
+  store(SK.OURA, oura)
+  store(SK.CLAUDE, claude)
+  showDashboard()
+
+  function showErr(msg) {
+    errEl.textContent = msg
+    errEl.style.display = 'block'
+  }
+}
+
+function openSettings() {
+  document.getElementById('dashboard').style.display = 'none'
+  document.getElementById('setup-screen').style.display = 'flex'
+  document.getElementById('setup-err').style.display = 'none'
+  document.getElementById('oura-token').value   = recall(SK.OURA) || ''
+  document.getElementById('claude-key').value   = recall(SK.CLAUDE) || ''
+  const g = recall(SK.GARMIN)
+  if (g) document.getElementById('garmin-setup').value = JSON.stringify(g, null, 2)
+}
+
+function showDashboard() {
+  document.getElementById('setup-screen').style.display = 'none'
+  document.getElementById('dashboard').style.display    = 'flex'
+  loadDashboard()
+}
+
+// ── Travel ───────────────────────────────────────────────────────
+function setTravel(level, el) {
+  travelLevel = level
+  document.querySelectorAll('.travel-btn').forEach(b => b.classList.remove('active'))
+  el.classList.add('active')
+}
+
+// ── Oura API ─────────────────────────────────────────────────────
+async function ouraFetch(path, params = {}) {
+  const url = new URL(OURA_BASE + path)
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${recall(SK.OURA)}` }
+  })
+  if (!res.ok) throw new Error(`Oura ${res.status}: Token ไม่ถูกต้อง หรือ API ผิดพลาด`)
+  return res.json()
+}
+
+async function fetchOura() {
+  const today = todayStr()
+  const from7 = daysAgoStr(7)
+  const p = { start_date: from7, end_date: today }
+
+  const [sleepR, readyR, actR, hrR] = await Promise.all([
+    ouraFetch('/usercollection/daily_sleep', p),
+    ouraFetch('/usercollection/daily_readiness', p),
+    ouraFetch('/usercollection/daily_activity', p),
+    ouraFetch('/usercollection/heartrate', {
+      start_datetime: daysAgoStr(1) + 'T00:00:00+07:00',
+      end_datetime:   today + 'T23:59:59+07:00',
+    }),
+  ])
+
+  const sleep    = sleepR.data?.at(-1)  || {}
+  const ready    = readyR.data?.at(-1)  || {}
+  const activity = actR.data?.at(-1)    || {}
+  const hrs      = hrR.data || []
+  const avgHR    = hrs.length ? Math.round(hrs.reduce((a, b) => a + b.bpm, 0) / hrs.length) : null
+
+  return {
+    sleep, ready, activity,
+    heartrate: avgHR,
+    history: {
+      sleep:     sleepR.data || [],
+      readiness: readyR.data || [],
+    },
+  }
+}
+
+// ── Claude API ───────────────────────────────────────────────────
+function buildPrompt(oura, garmin, travel) {
+  const TRAVEL = ['น้อย (work from home)', 'ปานกลาง', 'เยอะมาก (เดินทางทั้งวัน)']
+  const { sleep, ready, activity } = oura
+  const totalMin = Math.round((sleep.total_sleep_duration || 0) / 60)
+  const deepMin  = Math.round((sleep.deep_sleep_duration  || 0) / 60)
+  const remMin   = Math.round((sleep.rem_sleep_duration   || 0) / 60)
+
+  return `ข้อมูลสุขภาพวันนี้ (${new Date().toLocaleDateString('th-TH', {dateStyle:'long'})}):
+
+OURA RING:
+- Readiness Score: ${ready.score ?? 'ไม่มีข้อมูล'}/100
+- Sleep Score: ${sleep.score ?? 'ไม่มีข้อมูล'}/100
+- Total Sleep: ${totalMin} นาที (${(totalMin/60).toFixed(1)} ชม.)
+- Deep Sleep: ${deepMin} นาที
+- REM Sleep: ${remMin} นาที
+- HRV Average: ${ready.hrv_balance ?? 'ไม่มีข้อมูล'} ms
+- Resting HR: ${oura.heartrate ?? 'ไม่มีข้อมูล'} bpm
+- Recovery Index: ${ready.recovery_index ?? 'ไม่มีข้อมูล'}
+
+GARMIN (ถ้ามี):
+- Body Battery: ${garmin?.body_battery ?? 'ไม่มีข้อมูล'}
+- Steps วันนี้: ${garmin?.steps ?? activity.steps ?? 'ไม่มีข้อมูล'}
+- กิจกรรมล่าสุด: ${garmin?.last_activity?.type ?? 'ไม่มีข้อมูล'}
+
+การเดินทางวันนี้: ${TRAVEL[travel]}
+
+วิเคราะห์และแนะนำ:`
+}
+
+async function askClaude(prompt) {
+  const res = await fetch(GEMINI_URL(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Gemini API ${res.status}: ${err.error?.message || 'ผิดพลาด'}`)
+  }
+  const data = await res.json()
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+  if (!text) throw new Error('Gemini ไม่ส่งข้อความกลับ')
+  const match = text.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error('Gemini ตอบไม่ตรง format JSON')
+  return JSON.parse(match[0])
+}
+
+// ── Render: Vital Strip ──────────────────────────────────────────
+function renderVitals(oura, garmin) {
+  const { sleep, ready, heartrate } = oura
+  const battery = garmin?.body_battery ?? null
+  const hrv     = ready.hrv_balance   ?? null
+
+  const cards = [
+    { label: 'Readiness',     val: ready.score,   sub: 'ความพร้อมร่างกาย',   type: 'readiness' },
+    { label: 'Sleep',         val: sleep.score,   sub: formatMin(sleep.total_sleep_duration), type: 'sleep' },
+    { label: 'HRV',           val: hrv ? Math.round(hrv) : null, sub: 'ms avg', type: 'hrv' },
+    { label: 'Body Battery',  val: battery,       sub: battery == null ? 'ไม่มีข้อมูล' : battery >= 50 ? 'พร้อม' : 'ต่ำ', type: 'battery' },
+  ]
+
+  document.getElementById('vital-strip').innerHTML = cards.map((c, i) => {
+    const color = zoneColor(c.type, c.val)
+    const display = c.val ?? '—'
+    return `
+      <div class="vital-card" style="animation-delay:${i*0.08}s">
+        <div class="vital-label">${c.label}</div>
+        <div class="vital-score" id="vs${i}" style="color:${color}">${typeof display === 'number' ? 0 : display}</div>
+        <div class="vital-sub">${c.sub}</div>
+        <div class="vital-bar">
+          <div class="vital-bar-fill" id="vb${i}" style="background:${color};width:0%"></div>
+        </div>
+      </div>`
+  }).join('')
+
+  cards.forEach((c, i) => {
+    if (typeof c.val === 'number') {
+      countUp(document.getElementById(`vs${i}`), c.val)
+      setTimeout(() => {
+        document.getElementById(`vb${i}`).style.width = `${Math.min(100, c.val)}%`
+      }, 50)
+    }
+  })
+}
+
+// ── Render: AI Coach ─────────────────────────────────────────────
+function renderAI(coaching) {
+  const c     = statusColor(coaching.status)
+  const plan  = coaching.workout_plan || {}
+  const warns = (coaching.warnings || []).filter(Boolean)
+
+  const html = `
+    <div class="section-title">AI COACH</div>
+    <div>
+      <div class="status-badge" style="background:${c}18;border:1px solid ${c}44;color:${c}">
+        <div class="badge-dot" style="background:${c}"></div>
+        ${statusLabel(coaching.status)}
+      </div>
+      <div class="coach-summary cursor" id="coach-txt"></div>
+    </div>
+    <div class="workout-card">
+      <div class="mcard-label">แนะนำวันนี้</div>
+      <div class="workout-title" style="color:${c}">${workoutLabel(plan.type)}</div>
+      <div class="tags">
+        ${plan.duration_min ? `<div class="tag">⏱ ${plan.duration_min} นาที</div>` : ''}
+        ${plan.intensity    ? `<div class="tag">💪 ${plan.intensity}</div>` : ''}
+      </div>
+      <div class="workout-detail">${plan.detail || ''}</div>
+    </div>
+    ${warns.length ? `<div class="warnings">${warns.map(w => `<div class="warn-item">⚠ ${w}</div>`).join('')}</div>` : ''}
+    ${coaching.sleep_tip ? `<div class="sleep-tip"><strong>🌙 คืนนี้:</strong> ${coaching.sleep_tip}</div>` : ''}
+  `
+  document.getElementById('ai-col').innerHTML = html
+
+  const summaryEl = document.getElementById('coach-txt')
+  typewriter(summaryEl, coaching.summary || '', 28, () => summaryEl.classList.remove('cursor'))
+}
+
+// ── Render: Sleep Stages ─────────────────────────────────────────
+function renderSleep(sleep) {
+  const total = Math.max(sleep.total_sleep_duration || 1, 1)
+  const stages = [
+    { label:'Deep',  val: sleep.deep_sleep_duration  || 0, color:'#6366f1' },
+    { label:'REM',   val: sleep.rem_sleep_duration   || 0, color:'#a78bfa' },
+    { label:'Light', val: sleep.light_sleep_duration || 0, color:'#38bdf8' },
+    { label:'Awake', val: sleep.awake_time           || 0, color:'#333' },
+  ]
+
+  const el = document.getElementById('sleep-stages')
+  el.innerHTML = stages.map(s => {
+    const m = Math.round(s.val / 60)
+    return `
+      <div class="stage-wrap">
+        <div class="stage-bar-bg">
+          <div class="stage-bar-fill" id="sf-${s.label}" style="background:${s.color};height:0%"></div>
+        </div>
+        <div class="stage-val">${m}<small style="color:var(--muted);font-size:.7em">m</small></div>
+        <div class="stage-lbl">${s.label}</div>
+      </div>`
+  }).join('')
+
+  setTimeout(() => {
+    stages.forEach(s => {
+      const pct = Math.min(100, (s.val / total) * 100)
+      const el  = document.getElementById(`sf-${s.label}`)
+      if (el) el.style.height = `${pct}%`
+    })
+  }, 80)
+}
+
+// ── Render: Activity ─────────────────────────────────────────────
+function renderActivity(oura, garmin) {
+  const { activity, heartrate } = oura
+  const items = [
+    { label:'Steps',       val: (garmin?.steps || activity.steps || 0).toLocaleString(), unit:'', sub:'ก้าววันนี้' },
+    { label:'Active Cal',  val: activity.active_calories || '—', unit:'kcal', sub:'แคลอรี่ที่เผา' },
+    { label:'Resting HR',  val: heartrate || '—', unit:'bpm', sub:'ชีพจรขณะพัก' },
+    { label:'Activity',    val: activity.score || '—', unit:'', sub:'Activity Score' },
+  ]
+  document.getElementById('activity-metrics').innerHTML = items.map((m, i) => `
+    <div class="mcard" style="animation-delay:${i*0.07}s">
+      <div class="mcard-label">${m.label}</div>
+      <div class="mcard-value">${m.val}<span class="mcard-unit">${m.unit}</span></div>
+      <div class="mcard-sub">${m.sub}</div>
+    </div>`).join('')
+}
+
+// ── Render: Garmin ───────────────────────────────────────────────
+function renderGarmin(g) {
+  const el = document.getElementById('garmin-display')
+  if (!g) { el.innerHTML = '<div class="mcard-label">ไม่มีข้อมูล Garmin</div>'; return }
+
+  const act = g.last_activity || {}
+  el.innerHTML = `
+    <div class="metric-row" style="margin-bottom:0.75rem">
+      <div class="mcard" style="padding:.875rem">
+        <div class="mcard-label">Body Battery</div>
+        <div class="mcard-value" style="color:${zoneColor('battery', g.body_battery)}">${g.body_battery ?? '—'}</div>
+      </div>
+      <div class="mcard" style="padding:.875rem">
+        <div class="mcard-label">HRV Last Night</div>
+        <div class="mcard-value">${g.hrv_last_night ?? '—'}<span class="mcard-unit">ms</span></div>
+      </div>
+    </div>
+    ${act.type ? `
+    <div class="mcard" style="padding:.875rem">
+      <div class="mcard-label">กิจกรรมล่าสุด</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:1px;color:var(--accent)">${act.type}</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">
+        ${act.distance_km ? `📍 ${act.distance_km} km` : ''}
+        ${act.duration_min ? ` · ⏱ ${act.duration_min} นาที` : ''}
+        ${act.avg_hr       ? ` · ❤️ ${act.avg_hr} bpm` : ''}
+      </div>
+    </div>` : ''}
+  `
+}
+
+function loadGarmin() {
+  const raw = document.getElementById('garmin-paste').value.trim()
+  if (!raw) return
+  try {
+    garminData = JSON.parse(raw)
+    store(SK.GARMIN, garminData)
+    renderGarmin(garminData)
+    if (ouraData) renderActivity(ouraData, garminData)
+    document.getElementById('garmin-paste').value = ''
+    alert('โหลด Garmin สำเร็จ — กด Refresh เพื่ออัพเดต AI Coach')
+  } catch {
+    alert('JSON ไม่ถูกต้อง')
+  }
+}
+
+// ── Render: 7-Day Trend Chart ────────────────────────────────────
+function renderChart(history) {
+  const canvas = document.getElementById('trend-chart')
+  const dpr    = window.devicePixelRatio || 1
+  const W      = canvas.parentElement.clientWidth - 40  // account for padding
+  const H      = 90
+
+  canvas.width  = W * dpr
+  canvas.height = H * dpr
+  canvas.style.width  = W + 'px'
+  canvas.style.height = H + 'px'
+
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+
+  const pad = { t: 8, b: 8, l: 8, r: 8 }
+  const cW  = W - pad.l - pad.r
+  const cH  = H - pad.t - pad.b
+
+  // Grid
+  ctx.strokeStyle = '#2a2a2a'
+  ctx.lineWidth   = 1
+  ;[25, 50, 75].forEach(v => {
+    const y = pad.t + cH - (v / 100) * cH
+    ctx.beginPath()
+    ctx.moveTo(pad.l, y)
+    ctx.lineTo(W - pad.r, y)
+    ctx.stroke()
+  })
+
+  const drawSeries = (data, color) => {
+    if (!data?.length) return
+    ctx.beginPath()
+    ctx.strokeStyle = color
+    ctx.lineWidth   = 2
+    ctx.lineJoin    = 'round'
+    ctx.lineCap     = 'round'
+    data.forEach((d, i) => {
+      const x = pad.l + (i / Math.max(data.length - 1, 1)) * cW
+      const y = pad.t + cH - (Math.min(100, Math.max(0, d.score ?? d)) / 100) * cH
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+    })
+    ctx.stroke()
+    ctx.fillStyle = color
+    data.forEach((d, i) => {
+      const x = pad.l + (i / Math.max(data.length - 1, 1)) * cW
+      const y = pad.t + cH - (Math.min(100, Math.max(0, d.score ?? d)) / 100) * cH
+      ctx.beginPath()
+      ctx.arc(x, y, 3, 0, Math.PI * 2)
+      ctx.fill()
+    })
+  }
+
+  const readLast7 = (history.readiness || []).slice(-7)
+  const sleepLast7= (history.sleep     || []).slice(-7)
+  drawSeries(readLast7, '#35f18a')
+  drawSeries(sleepLast7,'#c8f135')
+}
+
+// ── History ──────────────────────────────────────────────────────
+function saveHistory(oura, garmin, coaching) {
+  const hist  = recall(SK.HIST) || []
+  const today = todayStr()
+  const entry = {
+    date:           today,
+    readiness:      oura.ready.score,
+    sleep_score:    oura.sleep.score,
+    hrv:            oura.ready.hrv_balance,
+    body_battery:   garmin?.body_battery ?? null,
+    ai_status:      coaching?.status ?? null,
+    ai_recommendation: coaching?.recommendation ?? null,
+  }
+  const updated = [...hist.filter(h => h.date !== today), entry]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-7)
+  store(SK.HIST, updated)
+}
+
+// ── Main load ────────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('hdr-date').textContent =
+    new Date().toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+
+  setStatus('load', 'กำลังโหลด Oura...')
+  garminData = recall(SK.GARMIN) || null
+
+  // ── Oura ──
+  let fetchFailed = false
+  try {
+    ouraData = await fetchOura()
+    setStatus('live', 'Oura ✓')
+  } catch (err) {
+    fetchFailed = true
+    console.error(err)
+    const hist = recall(SK.HIST)
+    setStatus('err', 'Oura ผิดพลาด')
+
+    if (hist?.length) {
+      // Show error but continue with last known data from history
+      document.getElementById('vital-strip').innerHTML = `
+        <div class="vital-card" style="grid-column:1/-1">
+          <div class="err-card">⚠ Oura API ผิดพลาด: ${err.message}<br><small>กรุณาตรวจสอบ Token หรือเชื่อมต่ออินเทอร์เน็ต</small></div>
+        </div>`
+    } else {
+      document.getElementById('vital-strip').innerHTML = `
+        <div class="vital-card" style="grid-column:1/-1">
+          <div class="err-card">Token ไม่ถูกต้อง หรือ Oura ไม่ตอบสนอง<br>
+          กรุณาตรวจสอบ Token ใน <strong>Oura App → Profile → Personal Access Token</strong></div>
+        </div>`
+      document.getElementById('ai-col').innerHTML = `
+        <div class="section-title">AI COACH</div>
+        <div class="err-card">ไม่สามารถโหลด AI Coach ได้ เนื่องจากไม่มีข้อมูล Oura</div>`
+      return
+    }
+  }
+
+  if (!fetchFailed) {
+    renderVitals(ouraData, garminData)
+    renderSleep(ouraData.sleep)
+    renderActivity(ouraData, garminData)
+    renderGarmin(garminData)
+    setTimeout(() => renderChart(ouraData.history), 120)
+  }
+
+  // ── AI Coach ──
+  setStatus('load', 'Oura ✓ — กำลังถาม Claude...')
+  document.getElementById('ai-col').innerHTML = `
+    <div class="section-title">AI COACH</div>
+    <div class="loading-box"><div class="spinner"></div><span>กำลังวิเคราะห์...</span></div>`
+
+  let coaching = null
+  try {
+    coaching = await askClaude(buildPrompt(ouraData, garminData, travelLevel))
+    renderAI(coaching)
+    setStatus('live', 'พร้อม')
+  } catch (err) {
+    console.error(err)
+    document.getElementById('ai-col').innerHTML = `
+      <div class="section-title">AI COACH</div>
+      <div class="err-card">ไม่สามารถโหลด AI Coach ได้<br><small>${err.message}</small></div>`
+    setStatus('live', 'Oura ✓ | Claude ✗')
+  }
+
+  if (ouraData) saveHistory(ouraData, garminData, coaching)
+  document.getElementById('footer-sync').textContent =
+    `Sync ล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+function init() {
+  if (recall(SK.OURA) && recall(SK.CLAUDE)) showDashboard()
+  else document.getElementById('setup-screen').style.display = 'flex'
+}
+
+init()
+</script>
+</body>
+</html>

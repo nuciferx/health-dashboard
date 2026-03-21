@@ -38,7 +38,7 @@ export default {
     // ── /gemini ── proxy to Gemini generateContent
     if (path === '/gemini' && request.method === 'POST') {
       const body = await request.text()
-      const GEMINI_MODEL = 'gemini-2.0-flash'
+      const GEMINI_MODEL = 'gemini-2.5-pro'
       const geminiURL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_KEY}`
       const res = await fetch(geminiURL, {
         method: 'POST',

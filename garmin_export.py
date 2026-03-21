@@ -43,12 +43,12 @@ def get_garmin_data(email: str, password: str) -> dict:
         },
     }
 
-    # Body Battery
+    # Body Battery — format: [[timestamp, value], ...]
     try:
         bb_data = client.get_body_battery(today)
         if bb_data and isinstance(bb_data, list) and bb_data[0]:
             values = bb_data[0].get("bodyBatteryValuesArray", [])
-            vals = [v.get("value") for v in values if v.get("value") is not None]
+            vals = [v[1] for v in values if isinstance(v, list) and len(v) > 1 and v[1] is not None]
             result["body_battery"] = vals[-1] if vals else None
     except Exception as e:
         print(f"[warn] body_battery: {e}", file=sys.stderr)

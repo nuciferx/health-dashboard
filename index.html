@@ -710,7 +710,7 @@ const SK = {
 // ── Proxy config ──────────────────────────────────────────────────
 // ถ้า HD_CONFIG.PROXY_URL ถูกตั้งค่า → ใช้ Cloudflare Worker (ซ่อน key)
 // ถ้าไม่มี → ส่ง request ตรง (ต้องมี token ใน localStorage)
-const PROXY_URL      = (window.HD_CONFIG || {}).PROXY_URL || ''   // e.g. 'https://health-proxy.xxx.workers.dev'
+const PROXY_URL      = (window.HD_CONFIG || {}).PROXY_URL || 'https://health-proxy.ideaplanstudio.workers.dev'
 const OURA_BASE      = PROXY_URL ? `${PROXY_URL}/oura` : 'https://api.ouraring.com/v2'
 const GEMINI_PROXY   = PROXY_URL ? `${PROXY_URL}/gemini` : ''
 const GARMIN_SERVER  = 'http://localhost:5001/garmin'

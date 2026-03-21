@@ -3,6 +3,8 @@
 *.env
 secrets.json
 credentials.json
+config.js
+location_token.json
 
 # Python
 __pycache__/

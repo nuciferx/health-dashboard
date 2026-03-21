@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Health Dashboard — nucifer</title>
+  <script src="config.js" onerror="console.warn('config.js not found')"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -547,15 +548,17 @@
 </head>
 <body>
 
-<!-- ══ SETUP SCREEN ════════════════════════════════════════════ -->
-<div id="setup-screen">
-  <div class="setup-card">
-    <div class="setup-logo">HEALTH</div>
-    <div class="setup-sub">Personal Health Dashboard — ตั้งค่าครั้งแรก</div>
+<!-- ══ SETTINGS PANEL ══════════════════════════════════════════ -->
+<div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
+  <div class="setup-card" style="max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <div class="setup-logo" style="font-size:2rem">SETTINGS</div>
+      <button onclick="closeSettings()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
 
     <div class="form-group">
       <label>Oura Personal Access Token</label>
-      <input type="password" id="oura-token" placeholder="eyJhbGciOi..." autocomplete="off">
+      <input type="password" id="oura-token" placeholder="XKJ5..." autocomplete="off">
     </div>
 
     <div class="form-group">
@@ -564,17 +567,17 @@
     </div>
 
     <div class="form-group">
-      <label>Garmin JSON <span style="color:var(--muted);text-transform:none;font-size:0.8em">(optional — รัน garmin_export.py แล้ว paste)</span></label>
-      <textarea id="garmin-setup" placeholder='{"date":"2026-03-21","body_battery":75,...}'></textarea>
+      <label>Garmin JSON <span style="color:var(--muted);text-transform:none;font-size:0.8em">(optional)</span></label>
+      <textarea id="garmin-setup" placeholder='{"date":"...","body_battery":75,...}'></textarea>
     </div>
 
-    <button class="btn" onclick="setupSave()">บันทึกและเริ่มใช้งาน</button>
+    <button class="btn" onclick="setupSave()">บันทึก</button>
     <div id="setup-err"></div>
   </div>
 </div>
 
 <!-- ══ MAIN DASHBOARD ══════════════════════════════════════════ -->
-<div id="dashboard">
+<div id="dashboard" style="display:flex">
 
   <!-- Header -->
   <header class="header">
@@ -821,38 +824,28 @@ function setupSave() {
   const garmin = document.getElementById('garmin-setup').value.trim()
   const errEl  = document.getElementById('setup-err')
 
-  if (!oura)   { showErr('กรุณากรอก Oura Token'); return }
-  if (!claude) { showErr('กรุณากรอก Claude API Key'); return }
-
   if (garmin) {
     try { store(SK.GARMIN, JSON.parse(garmin)) }
-    catch { showErr('Garmin JSON ไม่ถูกต้อง'); return }
+    catch { errEl.textContent = 'Garmin JSON ไม่ถูกต้อง'; errEl.style.display = 'block'; return }
   }
+  if (oura)   store(SK.OURA, oura)
+  if (claude) store(SK.CLAUDE, claude)
 
-  store(SK.OURA, oura)
-  store(SK.CLAUDE, claude)
-  showDashboard()
-
-  function showErr(msg) {
-    errEl.textContent = msg
-    errEl.style.display = 'block'
-  }
+  closeSettings()
+  loadDashboard()
 }
 
 function openSettings() {
-  document.getElementById('dashboard').style.display = 'none'
-  document.getElementById('setup-screen').style.display = 'flex'
+  document.getElementById('settings-overlay').style.display = 'flex'
   document.getElementById('setup-err').style.display = 'none'
-  document.getElementById('oura-token').value   = recall(SK.OURA) || ''
-  document.getElementById('claude-key').value   = recall(SK.CLAUDE) || ''
+  document.getElementById('oura-token').value  = recall(SK.OURA)   || ''
+  document.getElementById('claude-key').value  = recall(SK.CLAUDE) || ''
   const g = recall(SK.GARMIN)
   if (g) document.getElementById('garmin-setup').value = JSON.stringify(g, null, 2)
 }
 
-function showDashboard() {
-  document.getElementById('setup-screen').style.display = 'none'
-  document.getElementById('dashboard').style.display    = 'flex'
-  loadDashboard()
+function closeSettings() {
+  document.getElementById('settings-overlay').style.display = 'none'
 }
 
 // ── Travel ───────────────────────────────────────────────────────
@@ -1329,8 +1322,13 @@ async function loadDashboard() {
 
 // ── Init ─────────────────────────────────────────────────────────
 function init() {
-  if (recall(SK.OURA) && recall(SK.CLAUDE)) showDashboard()
-  else document.getElementById('setup-screen').style.display = 'flex'
+  // โหลดจาก config.js ถ้ามี (override localStorage)
+  const cfg = window.HD_CONFIG || {}
+  if (cfg.OURA_TOKEN)  store(SK.OURA,   cfg.OURA_TOKEN)
+  if (cfg.GEMINI_KEY)  store(SK.CLAUDE, cfg.GEMINI_KEY)
+
+  // เปิด dashboard เลย — ถ้าไม่มี key ยังโหลดได้ แค่ AI coach จะ error
+  loadDashboard()
 }
 
 init()

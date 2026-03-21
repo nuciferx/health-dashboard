@@ -664,6 +664,43 @@
         </div>
       </div>
 
+      <!-- Commute -->
+      <div class="garmin-card" id="commute-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="section-title" style="margin:0">COMMUTE</div>
+          <div id="commute-badge" style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace">วันนี้</div>
+        </div>
+        <div id="commute-display" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.75rem">
+          <div class="mcard" style="padding:.75rem">
+            <div class="mcard-label">ออกบ้าน</div>
+            <div class="mcard-value" id="c-leave-home" style="font-size:1.4rem">—</div>
+          </div>
+          <div class="mcard" style="padding:.75rem">
+            <div class="mcard-label">ถึงงาน</div>
+            <div class="mcard-value" id="c-arrive-work" style="font-size:1.4rem">—</div>
+          </div>
+          <div class="mcard" style="padding:.75rem">
+            <div class="mcard-label">ออกงาน</div>
+            <div class="mcard-value" id="c-leave-work" style="font-size:1.4rem">—</div>
+          </div>
+          <div class="mcard" style="padding:.75rem">
+            <div class="mcard-label">ถึงบ้าน</div>
+            <div class="mcard-value" id="c-arrive-home" style="font-size:1.4rem">—</div>
+          </div>
+        </div>
+        <div id="commute-min-display" style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"></div>
+        <details style="font-size:.8rem">
+          <summary style="cursor:pointer;color:var(--muted);margin-bottom:.5rem">✎ บันทึกเวลาเดินทางเอง</summary>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.5rem">
+            <div><label style="font-size:.72rem;color:var(--muted)">ออกบ้าน</label><input type="time" id="ci-leave-home" class="input" style="padding:.4rem"></div>
+            <div><label style="font-size:.72rem;color:var(--muted)">ถึงงาน</label><input type="time" id="ci-arrive-work" class="input" style="padding:.4rem"></div>
+            <div><label style="font-size:.72rem;color:var(--muted)">ออกงาน</label><input type="time" id="ci-leave-work" class="input" style="padding:.4rem"></div>
+            <div><label style="font-size:.72rem;color:var(--muted)">ถึงบ้าน</label><input type="time" id="ci-arrive-home" class="input" style="padding:.4rem"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="saveCommute()" style="margin-top:.5rem">บันทึก</button>
+        </details>
+      </div>
+
       <!-- Garmin -->
       <div class="garmin-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
@@ -767,7 +804,7 @@ function zoneColor(type, val) {
   const thresholds = {
     readiness: [[85,'#35f18a'],[70,'#c8f135'],[55,'#ffaa00'],[0,'#ff5c35']],
     sleep:     [[80,'#35f18a'],[65,'#c8f135'],[50,'#ffaa00'],[0,'#ff5c35']],
-    hrv:       [[70,'#35f18a'],[50,'#c8f135'],[30,'#ffaa00'],[0,'#ff5c35']],
+    hrv:       [[65,'#35f18a'],[45,'#c8f135'],[25,'#ffaa00'],[0,'#ff5c35']],
     battery:   [[75,'#35f18a'],[50,'#c8f135'],[30,'#ffaa00'],[0,'#ff5c35']],
   }
   const tbl = thresholds[type] || thresholds.readiness
@@ -890,7 +927,7 @@ async function fetchOura() {
   const ready    = readyR.data?.at(-1)  || {}
   const activity = actR.data?.at(-1)    || {}
   const hrs      = hrR.data || []
-  const avgHR    = hrs.length ? Math.round(hrs.reduce((a, b) => a + b.bpm, 0) / hrs.length) : null
+  const avgHR    = hrs.length ? Math.min(...hrs.map(h => h.bpm)) : null
 
   return {
     sleep, ready, activity,
@@ -968,12 +1005,12 @@ async function askClaude(prompt) {
 function renderVitals(oura, garmin) {
   const { sleep, ready, heartrate } = oura
   const battery = garmin?.body_battery ?? null
-  const hrv     = ready.hrv_balance   ?? null
+  const hrv     = oura.sleep?.average_hrv ?? null
 
   const cards = [
     { label: 'Readiness',     val: ready.score,   sub: 'ความพร้อมร่างกาย',   type: 'readiness' },
     { label: 'Sleep',         val: sleep.score,   sub: formatMin(sleep.total_sleep_duration), type: 'sleep' },
-    { label: 'HRV',           val: hrv ? Math.round(hrv) : null, sub: 'ms avg', type: 'hrv' },
+    { label: 'HRV',           val: hrv ? Math.round(hrv) : null, sub: 'HRV avg', type: 'hrv' },
     { label: 'Body Battery',  val: battery,       sub: battery == null ? 'ไม่มีข้อมูล' : battery >= 50 ? 'พร้อม' : 'ต่ำ', type: 'battery' },
   ]
 
@@ -1072,7 +1109,7 @@ function renderActivity(oura, garmin) {
   const items = [
     { label:'Steps',       val: (garmin?.steps || activity.steps || 0).toLocaleString(), unit:'', sub:'ก้าววันนี้' },
     { label:'Active Cal',  val: activity.active_calories || '—', unit:'kcal', sub:'แคลอรี่ที่เผา' },
-    { label:'Resting HR',  val: heartrate || '—', unit:'bpm', sub:'ชีพจรขณะพัก' },
+    { label:'Resting HR',  val: heartrate || '—', unit:'bpm', sub:'min HR วันนี้' },
     { label:'Activity',    val: activity.score || '—', unit:'', sub:'Activity Score' },
   ]
   document.getElementById('activity-metrics').innerHTML = items.map((m, i) => `
@@ -1156,6 +1193,58 @@ function setGarminBadge(online, mode = null) {
     badge.style.color = 'var(--muted)'
     badge.textContent = '⚫ Server ไม่รัน'
   }
+}
+
+// ── Commute ───────────────────────────────────────────────────────
+const SK_COMMUTE = 'hd_commute'
+
+function loadCommuteDisplay() {
+  const today  = todayStr()
+  const stored = recall(SK_COMMUTE) || {}
+  const rec    = stored[today] || {}
+
+  document.getElementById('c-leave-home').textContent  = rec.leave_home  || '—'
+  document.getElementById('c-arrive-work').textContent = rec.arrive_work || '—'
+  document.getElementById('c-leave-work').textContent  = rec.leave_work  || '—'
+  document.getElementById('c-arrive-home').textContent = rec.arrive_home || '—'
+
+  const badge = document.getElementById('commute-badge')
+  if (rec.leave_home) {
+    badge.style.color = 'var(--optimal)'
+    badge.textContent = '✓ มีข้อมูล'
+    if (rec.commute_min) {
+      document.getElementById('commute-min-display').textContent =
+        `⏱ เดินทาง ${rec.commute_min} นาที`
+    }
+  } else {
+    badge.textContent = 'ยังไม่มีข้อมูล'
+  }
+
+  // pre-fill inputs
+  if (rec.leave_home)  document.getElementById('ci-leave-home').value  = rec.leave_home
+  if (rec.arrive_work) document.getElementById('ci-arrive-work').value = rec.arrive_work
+  if (rec.leave_work)  document.getElementById('ci-leave-work').value  = rec.leave_work
+  if (rec.arrive_home) document.getElementById('ci-arrive-home').value = rec.arrive_home
+}
+
+function saveCommute() {
+  const today = todayStr()
+  const lh = document.getElementById('ci-leave-home').value
+  const aw = document.getElementById('ci-arrive-work').value
+  const lw = document.getElementById('ci-leave-work').value
+  const ah = document.getElementById('ci-arrive-home').value
+
+  let commuteMin = null
+  if (lh && aw) {
+    const [lhH, lhM] = lh.split(':').map(Number)
+    const [awH, awM] = aw.split(':').map(Number)
+    commuteMin = (awH * 60 + awM) - (lhH * 60 + lhM)
+  }
+
+  const stored = recall(SK_COMMUTE) || {}
+  stored[today] = { leave_home: lh, arrive_work: aw, leave_work: lw, arrive_home: ah, commute_min: commuteMin }
+  store(SK_COMMUTE, stored)
+  loadCommuteDisplay()
 }
 
 // ── Render: 7-Day Trend Chart ────────────────────────────────────
@@ -1308,6 +1397,7 @@ async function loadDashboard() {
     renderSleep(ouraData.sleep)
     renderActivity(ouraData, garminData)
     renderGarmin(garminData)
+    loadCommuteDisplay()
     setTimeout(() => renderChart(ouraData.history), 120)
   }
 

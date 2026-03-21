@@ -24,7 +24,6 @@ except ImportError:
 # ── Config ──────────────────────────────────────────────────────
 SCOPES = [
     "https://www.googleapis.com/auth/dataportability.maps.timeline",
-    "https://www.googleapis.com/auth/dataportability.maps.aliasprofile",
 ]
 CLIENT_SECRETS = "client_secrets.json"
 TOKEN_FILE     = "location_token.json"

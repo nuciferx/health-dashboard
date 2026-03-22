@@ -536,12 +536,8 @@
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    /* Responsive */
+    /* Responsive (base) */
     @media (max-width: 768px) {
-      .vital-strip { grid-template-columns: repeat(2, 1fr); }
-      .main { grid-template-columns: 1fr; }
-      .ai-col { border-right: none; border-bottom: 1px solid var(--border); }
-      .metric-row { grid-template-columns: 1fr; }
       .travel-opts { flex-wrap: wrap; }
     }
     @media (max-width: 480px) {
@@ -684,6 +680,138 @@
       cursor: not-allowed;
       pointer-events: none;
     }
+
+    /* ── Responsive ──────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Mobile bottom nav */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      z-index: 100;
+      height: 56px;
+    }
+    .bottom-nav-inner {
+      display: flex;
+      height: 100%;
+    }
+    .nav-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: .65rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color .2s;
+      background: none;
+      border: none;
+      font-family: 'Noto Sans Thai', sans-serif;
+    }
+    .nav-tab.active { color: var(--accent); }
+    .nav-tab svg { width: 20px; height: 20px; }
+
+    @media (max-width: 768px) {
+      .bottom-nav { display: block; }
+      #dashboard { padding-bottom: 64px; }
+      .main { flex-direction: column; }
+      .ai-col { width: 100% !important; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); }
+      .metrics-col { width: 100%; }
+      .vital-strip { grid-template-columns: 1fr 1fr; }
+      .metric-row { grid-template-columns: 1fr 1fr; }
+      .stage-val { font-size: .85rem; }
+
+      /* Hide desktop N-BOT and metrics on mobile - use tabs instead */
+      body.mobile-dash .ai-col { display: none; }
+      body.mobile-data .ai-col { display: none; }
+      body.mobile-nbot .metrics-col { display: none; }
+      body.mobile-nbot .vital-strip { display: none; }
+      body.mobile-data .metrics-col { display: none; }
+      body.mobile-data .vital-strip { display: none; }
+      body.mobile-dash .metrics-col { display: block; }
+      body.mobile-dash .vital-strip { display: grid; }
+    }
+
+    @media (min-width: 769px) {
+      .bottom-nav { display: none !important; }
+      #data-tab-section { display: block; }
+    }
+
+    /* ── Sleep Card redesign ─────────────────────────── */
+    .sleep-time-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .sleep-time-block {
+      text-align: center;
+    }
+    .sleep-time-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .sleep-time-value { font-family: 'Bebas Neue', cursive; font-size: 1.6rem; color: var(--text); letter-spacing: 1px; }
+    .sleep-time-arrow { font-size: 1.2rem; color: var(--muted); flex: 1; text-align: center; }
+    .sleep-hours-big { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; color: var(--accent); line-height: 1; }
+    .sleep-hours-unit { font-size: .8rem; color: var(--muted); }
+
+    /* ── Data Tab ─────────────────────────────────────── */
+    #data-tab-section { margin-top: 1rem; }
+    .data-period-tabs {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .data-period-tab {
+      padding: 0.3rem 0.6rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: .72rem;
+      font-family: 'Space Mono', monospace;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .data-period-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+    .data-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 768px) {
+      .data-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .data-metric-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+    }
+    .data-metric-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0.25rem; }
+    .data-metric-value { font-family: 'Bebas Neue', cursive; font-size: 1.6rem; line-height: 1; }
+    .data-metric-unit { font-size: .7rem; color: var(--muted); }
+    .data-metric-sub { font-size: .68rem; color: var(--muted); margin-top: 0.2rem; }
+    .data-insight-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .data-insight-title { font-size: .7rem; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 0.5rem; }
+    .data-insight-row { font-size: .8rem; color: var(--text); line-height: 1.8; }
   </style>
 </head>
 <body>
@@ -874,6 +1002,36 @@
         </div>
       </div>
 
+      <!-- Data Tab -->
+      <div id="data-tab-section">
+        <div class="section-title">DATA OVERVIEW</div>
+        <div class="data-period-tabs">
+          <div class="data-period-tab active" onclick="selectDataPeriod('1d',this)">1วัน</div>
+          <div class="data-period-tab" onclick="selectDataPeriod('3d',this)">3วัน</div>
+          <div class="data-period-tab" onclick="selectDataPeriod('7d',this)">7วัน</div>
+          <div class="data-period-tab" onclick="selectDataPeriod('1m',this)">1เดือน</div>
+          <div class="data-period-tab" onclick="selectDataPeriod('3m',this)">3เดือน</div>
+          <div class="data-period-tab" onclick="selectDataPeriod('6m',this)">6เดือน</div>
+          <div class="data-period-tab" onclick="selectDataPeriod('1y',this)">1ปี</div>
+          <div class="data-period-tab" onclick="selectDataPeriod('all',this)">All</div>
+        </div>
+        <div class="data-metrics-grid" id="data-metrics-grid">
+          <div class="data-metric-card"><div class="data-metric-label">Loading...</div></div>
+        </div>
+        <div class="chart-card" style="margin-bottom:0.75rem">
+          <canvas id="data-trend-chart" style="width:100%;height:100px;display:block"></canvas>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#35f18a"></div>Readiness</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#c8f135"></div>Sleep</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>HRV</div>
+          </div>
+        </div>
+        <div class="data-insight-card" id="data-insight-card">
+          <div class="data-insight-title">INSIGHT</div>
+          <div class="data-insight-row" id="data-insight-text">เลือกช่วงเวลาเพื่อดู insight</div>
+        </div>
+      </div>
+
     </section>
   </div>
 
@@ -885,6 +1043,24 @@
       <button class="btn btn-sm" onclick="loadDashboard()">↻ Refresh</button>
     </div>
   </footer>
+
+  <!-- Bottom Nav (mobile only) -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="nav-tab active" id="nav-dash" onclick="switchMobileTab('dash',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-tab" id="nav-data" onclick="switchMobileTab('data',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Data
+      </button>
+      <button class="nav-tab" id="nav-nbot" onclick="switchMobileTab('nbot',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        N-BOT
+      </button>
+    </div>
+  </nav>
 
 </div>
 
@@ -1236,29 +1412,55 @@ function renderSleep(sleep) {
     { label:'Deep',  val: sleep.deep_sleep_duration  || 0, color:'#6366f1' },
     { label:'REM',   val: sleep.rem_sleep_duration   || 0, color:'#a78bfa' },
     { label:'Light', val: sleep.light_sleep_duration || 0, color:'#38bdf8' },
-    { label:'Awake', val: sleep.awake_time           || 0, color:'#333' },
+    { label:'Awake', val: sleep.awake_time           || 0, color:'#444' },
   ]
 
-  const el = document.getElementById('sleep-stages')
-  el.innerHTML = stages.map(s => {
-    const m = Math.round(s.val / 60)
-    return `
-      <div class="stage-wrap">
-        <div class="stage-bar-bg">
-          <div class="stage-bar-fill" id="sf-${s.label}" style="background:${s.color};height:0%"></div>
-        </div>
-        <div class="stage-val">${m}<small style="color:var(--muted);font-size:.7em">m</small></div>
-        <div class="stage-lbl">${s.label}</div>
-      </div>`
-  }).join('')
+  // Parse bedtime and wake time
+  let bedStr = '—', wakeStr = '—'
+  if (sleep.bedtime_start) {
+    const bd = new Date(sleep.bedtime_start)
+    bedStr = bd.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', hour12: false })
+  }
+  if (sleep.bedtime_end) {
+    const we = new Date(sleep.bedtime_end)
+    wakeStr = we.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', hour12: false })
+  }
 
-  setTimeout(() => {
-    stages.forEach(s => {
-      const pct = Math.min(100, (s.val / total) * 100)
-      const el  = document.getElementById(`sf-${s.label}`)
-      if (el) el.style.height = `${pct}%`
-    })
-  }, 80)
+  const totalHrs = (sleep.total_sleep_duration || 0) / 3600
+  const hrsDisplay = totalHrs > 0 ? totalHrs.toFixed(1) : '—'
+  const sleepColor = zoneColor('sleep', sleep.score)
+
+  const el = document.getElementById('sleep-stages')
+  el.innerHTML = `
+    <div class="sleep-time-row">
+      <div class="sleep-time-block">
+        <div class="sleep-time-label">นอน</div>
+        <div class="sleep-time-value">${bedStr}</div>
+      </div>
+      <div class="sleep-time-arrow">→</div>
+      <div class="sleep-time-block">
+        <div class="sleep-time-label">ตื่น</div>
+        <div class="sleep-time-value">${wakeStr}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="sleep-hours-big" style="color:${sleepColor}">${hrsDisplay}</div>
+        <div class="sleep-hours-unit">ชั่วโมง</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.75rem;margin-top:0.25rem">
+      ${stages.map(s => {
+        const m = Math.round(s.val / 60)
+        const pct = Math.min(100, (s.val / total) * 100)
+        return `<div style="flex:1;text-align:center">
+          <div style="height:40px;background:var(--bg2);border-radius:4px;overflow:hidden;display:flex;align-items:flex-end">
+            <div style="width:100%;height:${pct}%;background:${s.color};transition:height .6s ease;border-radius:4px 4px 0 0"></div>
+          </div>
+          <div style="font-size:.75rem;margin-top:.25rem;color:var(--text)">${m}<small style="color:var(--muted);font-size:.65em">m</small></div>
+          <div style="font-size:.65rem;color:var(--muted)">${s.label}</div>
+        </div>`
+      }).join('')}
+    </div>
+  `
 }
 
 // ── Render: Activity ─────────────────────────────────────────────
@@ -1561,7 +1763,12 @@ async function loadDashboard() {
 
   if (ouraData) saveHistory(ouraData, garminData, null)
   periodCache = {}  // clear cache เมื่อ refresh
+  dataCache = {}
   renderChips('1d')
+  // Auto-load data tab on desktop
+  if (window.innerWidth >= 769) {
+    setTimeout(() => renderDataTab('7d'), 200)
+  }
   setStatus('live', 'พร้อม')
   document.getElementById('footer-sync').textContent =
     `Sync ล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`
@@ -1712,26 +1919,53 @@ function buildNbotPrompt(ctx, question) {
   const TRAVEL_LABEL = ['น้อย (WFH)', 'ปานกลาง', 'เยอะมาก']
   const label = { '1d':'วันนี้','3d':'3 วันล่าสุด','7d':'7 วันล่าสุด','1m':'30 วันล่าสุด','1y':'365 วันล่าสุด' }[ctx.period]
 
-  return `คุณคือโค้ชสุขภาพส่วนตัว N-BOT พูดภาษาไทย เป็นกันเอง
-ตอบเป็น Markdown ภาษาไทย ครบถ้วน ไม่ตัดข้อความ พร้อมคำแนะนำ ไม่จำกัดความยาว
-ใช้ ## หัวข้อ, **ตัวหนา**, - bullet points ได้เลย ห้ามตอบเป็น JSON:
+  return `คุณคือผู้เชี่ยวชาญด้านสุขภาพและการฟื้นฟูร่างกาย นักวิทยาศาสตร์การกีฬา
+ตอบภาษาไทย กระชับ ตรงประเด็น ห้ามอ้อมค้อม ห้ามแนะนำให้ไปพบแพทย์
+ใช้ Markdown: **หัวข้อสำคัญ** และ • bullet points เท่านั้น ตอบ 5-8 bullets
 
 ข้อมูลสุขภาพ (${label}):
-- Readiness เฉลี่ย: ${ctx.avgReadiness ?? '?'}/100 (วันนี้: ${ctx.todayReadiness ?? '?'})
-- Sleep Score เฉลี่ย: ${ctx.avgSleep ?? '?'}/100 (วันนี้: ${ctx.todaySleep ?? '?'})
-- HRV เฉลี่ย: ${ctx.avgHRV ?? '?'} ms (วันนี้: ${ctx.todayHRV ?? '?'})
-- Resting HR เฉลี่ย: ${ctx.avgRestingHR ?? '?'} bpm
-- นอนรวมเฉลี่ย: ${ctx.avgTotalMin ?? '?'} นาที (Deep ${ctx.avgDeepMin ?? '?'} นาที, REM ${ctx.avgREMMin ?? '?'} นาที)
-- Steps เฉลี่ย: ${ctx.avgSteps ?? '?'}
-- Readiness ดีสุด/แย่สุด: ${ctx.bestReadiness ?? '?'} / ${ctx.worstReadiness ?? '?'}
-${ctx.garmin ? `- Body Battery: ${ctx.garmin.body_battery ?? '?'}` : ''}
-- การเดินทาง: ${TRAVEL_LABEL[travelLevel]}
+• Readiness เฉลี่ย ${ctx.avgReadiness ?? '?'}/100 (วันนี้ ${ctx.todayReadiness ?? '?'})
+• Sleep Score เฉลี่ย ${ctx.avgSleep ?? '?'}/100 (วันนี้ ${ctx.todaySleep ?? '?'})
+• HRV เฉลี่ย ${ctx.avgHRV ?? '?'} ms (วันนี้ ${ctx.todayHRV ?? '?'} ms)
+• Resting HR เฉลี่ย ${ctx.avgRestingHR ?? '?'} bpm
+• นอนรวมเฉลี่ย ${ctx.avgTotalMin ?? '?'} นาที | Deep ${ctx.avgDeepMin ?? '?'} นาที | REM ${ctx.avgREMMin ?? '?'} นาที
+• Readiness ดีสุด ${ctx.bestReadiness ?? '?'} / แย่สุด ${ctx.worstReadiness ?? '?'}
+• Steps เฉลี่ย ${ctx.avgSteps ?? '?'}${ctx.garmin ? ` | Body Battery ${ctx.garmin.body_battery ?? '?'}` : ''}
+• การเดินทาง: ${TRAVEL_LABEL[travelLevel]}
 
 คำถาม: ${question}`
 }
 
+const NBOT_CACHE_KEY = 'hd_nbot_cache'
+
+function getNbotCache(period, question) {
+  const today = todayStr()
+  const cache = JSON.parse(localStorage.getItem(NBOT_CACHE_KEY) || '{}')
+  const key   = `${today}_${period}_${question}`
+  return cache[key] || null
+}
+
+function setNbotCache(period, question, data) {
+  const today = todayStr()
+  const cache = JSON.parse(localStorage.getItem(NBOT_CACHE_KEY) || '{}')
+  // keep only today's cache
+  const newCache = {}
+  Object.entries(cache).forEach(([k,v]) => { if (k.startsWith(today)) newCache[k]=v })
+  newCache[`${today}_${period}_${question}`] = data
+  localStorage.setItem(NBOT_CACHE_KEY, JSON.stringify(newCache))
+}
+
 async function askNbot(question) {
   if (nbotLoading) return
+
+  // Check cache first
+  const cached = getNbotCache(nbotPeriod, question)
+  if (cached) {
+    addBubble('user', question)
+    addBubble('bot', cached.text, cached.meta + ' 📦 cached')
+    return
+  }
+
   nbotLoading = true
   setChipsDisabled(true)
 
@@ -1744,7 +1978,7 @@ async function askNbot(question) {
 
     const body = JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.5 },
+      generationConfig: { maxOutputTokens: 800, temperature: 0.5 },
     })
 
     const res = await fetch(GEMINI_PROXY || (() => {
@@ -1773,6 +2007,7 @@ async function askNbot(question) {
     const total  = usage.totalTokenCount     || (inTok+outTok+thkTok)
     const meta   = `📊 ${model} | in ${inTok} + out ${outTok}${thkTok?` + think ${thkTok}`:''} = ${total} tokens | ฿${totalTHB < 0.01 ? '0.00 (free)' : totalTHB.toFixed(4)}`
 
+    setNbotCache(nbotPeriod, question, { text: mdToHtml(text), meta })
     addBubble('bot', mdToHtml(text), meta)
 
   } catch(e) {
@@ -1781,6 +2016,159 @@ async function askNbot(question) {
   } finally {
     nbotLoading = false
     setChipsDisabled(false)
+  }
+}
+
+// ── Data Tab ─────────────────────────────────────────────────────
+let dataPeriod    = '1d'
+let dataCache     = {}
+
+const DATA_PERIOD_DAYS = { '1d':1,'3d':3,'7d':7,'1m':30,'3m':90,'6m':180,'1y':365,'all':730 }
+
+async function selectDataPeriod(period, el) {
+  dataPeriod = period
+  document.querySelectorAll('.data-period-tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  await renderDataTab(period)
+}
+
+async function renderDataTab(period) {
+  const grid = document.getElementById('data-metrics-grid')
+  grid.innerHTML = '<div class="data-metric-card" style="grid-column:1/-1"><div class="skeleton" style="height:40px"></div></div>'
+
+  try {
+    const days  = DATA_PERIOD_DAYS[period] || 7
+    const today = todayStr()
+    const from  = daysAgoStr(days)
+    const p     = { start_date: from, end_date: today }
+
+    const [dailySleepR, sleepR, readyR, actR] = await Promise.all([
+      ouraFetch('/usercollection/daily_sleep', p),
+      ouraFetch('/usercollection/sleep', p),
+      ouraFetch('/usercollection/daily_readiness', p),
+      ouraFetch('/usercollection/daily_activity', p),
+    ])
+
+    const readiness = readyR.data     || []
+    const sleeps    = dailySleepR.data|| []
+    const sleepRaws = sleepR.data     || []
+    const acts      = actR.data       || []
+
+    const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null
+    const avgR  = avg(readiness.map(d=>d.score).filter(Boolean))
+    const avgS  = avg(sleeps.map(d=>d.score).filter(Boolean))
+    const avgHRV= avg(sleepRaws.map(d=>d.average_hrv).filter(Boolean))
+    const avgRHR= avg(sleepRaws.map(d=>d.lowest_heart_rate).filter(Boolean))
+    const avgHrs= sleepRaws.length ? (sleepRaws.reduce((a,b)=>a+(b.total_sleep_duration||0),0)/sleepRaws.length/3600).toFixed(1) : null
+    const avgDeep=sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.deep_sleep_duration||0),0)/sleepRaws.length/60) : null
+    const avgREM= sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.rem_sleep_duration||0),0)/sleepRaws.length/60) : null
+    const avgSteps=avg(acts.map(d=>d.steps).filter(Boolean))
+    const bestR = readiness.length ? Math.max(...readiness.map(d=>d.score||0)) : null
+    const worstR= readiness.length ? Math.min(...readiness.map(d=>d.score||0)) : null
+    const bestDay = readiness.find(d=>d.score===bestR)?.day || ''
+    const worstDay= readiness.find(d=>d.score===worstR)?.day || ''
+
+    const metrics = [
+      { label:'Readiness', value: avgR,    unit:'/ 100', color: zoneColor('readiness', avgR) },
+      { label:'Sleep Score',value: avgS,   unit:'/ 100', color: zoneColor('sleep', avgS) },
+      { label:'HRV',       value: avgHRV,  unit:'ms',    color: zoneColor('hrv', avgHRV) },
+      { label:'Resting HR',value: avgRHR,  unit:'bpm',   color:'var(--text)' },
+      { label:'นอนรวม',    value: avgHrs,  unit:'ชม.',   color:'var(--text)' },
+      { label:'Deep Sleep',value: avgDeep, unit:'นาที',  color:'#6366f1' },
+      { label:'REM Sleep', value: avgREM,  unit:'นาที',  color:'#a78bfa' },
+      { label:'Steps',     value: avgSteps?avgSteps.toLocaleString():null, unit:'ก้าว', color:'var(--text)' },
+    ]
+
+    grid.innerHTML = metrics.map(m => `
+      <div class="data-metric-card">
+        <div class="data-metric-label">${m.label}</div>
+        <div class="data-metric-value" style="color:${m.color}">${m.value ?? '—'}<span class="data-metric-unit"> ${m.value != null ? m.unit : ''}</span></div>
+      </div>`).join('')
+
+    // Chart
+    const chartData = { readiness, sleep: sleeps }
+    renderDataChart(chartData, sleepRaws)
+
+    // Insight
+    const label = { '1d':'วันนี้','3d':'3 วัน','7d':'7 วัน','1m':'1 เดือน','3m':'3 เดือน','6m':'6 เดือน','1y':'1 ปี','all':'ทั้งหมด' }[period]
+    const trendR = readiness.length >= 3
+      ? (readiness.slice(-3).reduce((a,b)=>a+b.score,0)/3 > readiness.slice(0,3).reduce((a,b)=>a+b.score,0)/3 ? '↑ ดีขึ้น' : '↓ ลดลง')
+      : '—'
+
+    document.getElementById('data-insight-text').innerHTML = `
+      <strong>${label} (${readiness.length} วัน)</strong><br>
+      • Readiness ดีสุด: <strong>${bestR}</strong> (${bestDay})<br>
+      • Readiness แย่สุด: <strong>${worstR}</strong> (${worstDay})<br>
+      • แนวโน้ม Readiness: <strong>${trendR}</strong><br>
+      ${avgHRV ? `• HRV เฉลี่ย ${avgHRV}ms — ${avgHRV >= 45 ? '✅ ดี' : avgHRV >= 25 ? '⚠ ปานกลาง' : '🔴 ต่ำ'}<br>` : ''}
+      ${avgHrs ? `• นอนเฉลี่ย ${avgHrs} ชม. — ${parseFloat(avgHrs) >= 7 ? '✅ เพียงพอ' : parseFloat(avgHrs) >= 6 ? '⚠ ค่อนข้างน้อย' : '🔴 น้อยมาก'}<br>` : ''}
+    `
+
+  } catch(e) {
+    grid.innerHTML = `<div class="data-metric-card" style="grid-column:1/-1"><div class="err-card">${e.message}</div></div>`
+  }
+}
+
+function renderDataChart(histData, sleepRaws) {
+  const canvas = document.getElementById('data-trend-chart')
+  if (!canvas) return
+  const dpr = window.devicePixelRatio || 1
+  const W   = canvas.parentElement.clientWidth - 32
+  const H   = 100
+  canvas.width  = W * dpr
+  canvas.height = H * dpr
+  canvas.style.width  = W + 'px'
+  canvas.style.height = H + 'px'
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+
+  const pad = { t:8, b:8, l:8, r:8 }
+  const cW  = W - pad.l - pad.r
+  const cH  = H - pad.t - pad.b
+
+  ctx.strokeStyle = '#2a2a2a'
+  ctx.lineWidth = 1
+  ;[25,50,75].forEach(v => {
+    const y = pad.t + cH - (v/100)*cH
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke()
+  })
+
+  const draw = (data, color) => {
+    if (!data?.length) return
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round'
+    data.forEach((d,i) => {
+      const x = pad.l + (i/Math.max(data.length-1,1))*cW
+      const y = pad.t + cH - (Math.min(100,Math.max(0,d.score??d))/100)*cH
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y)
+    })
+    ctx.stroke()
+    ctx.fillStyle = color
+    data.forEach((d,i) => {
+      const x = pad.l + (i/Math.max(data.length-1,1))*cW
+      const y = pad.t + cH - (Math.min(100,Math.max(0,d.score??d))/100)*cH
+      ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill()
+    })
+  }
+
+  draw(histData.readiness, '#35f18a')
+  draw(histData.sleep,     '#c8f135')
+
+  // HRV normalized to 0-100 (max 100ms)
+  if (sleepRaws?.length) {
+    const hrvData = sleepRaws.map(d => ({ score: Math.min(100, (d.average_hrv||0)) }))
+    draw(hrvData, '#38bdf8')
+  }
+}
+
+// ── Mobile tab switching ──────────────────────────────────────────
+function switchMobileTab(tab, el) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  document.body.className = `mobile-${tab}`
+
+  if (tab === 'data' && dataPeriod) {
+    setTimeout(() => renderDataTab(dataPeriod), 50)
   }
 }
 

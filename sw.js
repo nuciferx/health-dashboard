@@ -1,5 +1,5 @@
 // Service Worker — Health Dashboard PWA
-const CACHE = 'hd-v1'
+const CACHE = 'hd-v3'
 const ASSETS = ['./', './index.html', './manifest.json']
 
 self.addEventListener('install', e => {

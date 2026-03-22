@@ -36,14 +36,7 @@
       min-height: 100vh;
     }
 
-    /* ── Setup Screen ────────────────────────────────── */
-    #setup-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 2rem;
-    }
+    /* ── Setup / Settings ────────────────────────────── */
     .setup-card {
       background: var(--bg2);
       border: 1px solid var(--border);
@@ -58,12 +51,6 @@
       color: var(--accent);
       letter-spacing: 4px;
     }
-    .setup-sub {
-      color: var(--muted);
-      font-size: 0.85rem;
-      margin-bottom: 2rem;
-      margin-top: 0.25rem;
-    }
     .form-group { margin-bottom: 1.25rem; }
     label {
       display: block;
@@ -73,9 +60,7 @@
       color: var(--muted);
       margin-bottom: 0.4rem;
     }
-    input[type="text"],
-    input[type="password"],
-    textarea {
+    input[type="text"], input[type="password"], textarea {
       width: 100%;
       background: var(--bg3);
       border: 1px solid var(--border);
@@ -104,567 +89,275 @@
     }
     .btn:hover { opacity: 0.9; }
     .btn:active { transform: scale(0.98); }
-    .btn-outline {
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent);
-    }
+    .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
     .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; width: auto; }
-    #setup-err {
-      margin-top: 0.75rem;
-      color: var(--rest);
-      font-size: 0.82rem;
-      display: none;
-    }
 
-    /* ── Dashboard ───────────────────────────────────── */
-    #dashboard {
-      display: none;
-      flex-direction: column;
-      min-height: 100vh;
-    }
+    /* ── Dashboard shell ─────────────────────────────── */
+    #dashboard { display: flex; flex-direction: column; min-height: 100vh; }
 
     /* Header */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.875rem 1.5rem;
+      padding: 0.75rem 1.5rem;
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 100;
       background: var(--bg);
     }
-    .logo {
-      font-family: 'Bebas Neue', cursive;
-      font-size: 1.75rem;
-      color: var(--accent);
-      letter-spacing: 3px;
-    }
-    .header-date {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-    .header-status {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
+    .logo { font-family: 'Bebas Neue', cursive; font-size: 1.6rem; color: var(--accent); letter-spacing: 3px; }
+    .header-date { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--muted); }
+    .header-status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
     .dot.live   { background: var(--optimal); animation: pulse 2s infinite; }
     .dot.err    { background: var(--rest); }
     .dot.load   { background: var(--caution); }
-    @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50%      { opacity: 0.4; }
-    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-    /* Vital Strip */
+    /* ── Top tabs (desktop) ──────────────────────────── */
+    .top-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 49px;
+      z-index: 99;
+    }
+    .top-tab {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .top-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .top-tab:hover:not(.active) { color: var(--text); }
+
+    /* ── Tab panels ──────────────────────────────────── */
+    .tab-panel { display: none; padding: 1.25rem 1.5rem; padding-bottom: 1.5rem; }
+    .tab-panel.active { display: block; }
+
+    /* ── Vital Strip ─────────────────────────────────── */
     .vital-strip {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       background: var(--border);
       gap: 1px;
-      border-bottom: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
     }
     .vital-card {
-      background: var(--bg);
-      padding: 1.4rem 1.25rem;
+      background: var(--bg2);
+      padding: 1.1rem 1rem;
       text-align: center;
-      cursor: default;
-      transition: background 0.2s;
-      animation: fadeUp 0.5s ease both;
+      transition: background .2s;
+      animation: fadeUp .5s ease both;
     }
-    .vital-card:hover { background: var(--bg2); }
-    .vital-label {
-      font-size: 0.67rem;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--muted);
-      margin-bottom: 0.4rem;
-    }
-    .vital-score {
-      font-family: 'Bebas Neue', cursive;
-      font-size: 3.2rem;
-      line-height: 1;
-      margin-bottom: 0.2rem;
-    }
-    .vital-sub {
-      font-size: 0.72rem;
-      color: var(--muted);
-    }
-    .vital-bar {
-      height: 3px;
-      border-radius: 2px;
-      background: var(--border);
-      margin-top: 0.6rem;
-      overflow: hidden;
-    }
-    .vital-bar-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 1s cubic-bezier(0.22,1,0.36,1);
-    }
+    .vital-card:hover { background: var(--bg3); }
+    .vital-label { font-size: .65rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: .3rem; }
+    .vital-score { font-family: 'Bebas Neue', cursive; font-size: 2.8rem; line-height: 1; margin-bottom: .15rem; }
+    .vital-sub   { font-size: .68rem; color: var(--muted); }
+    .vital-bar   { height: 3px; border-radius: 2px; background: var(--border); margin-top: .5rem; overflow: hidden; }
+    .vital-bar-fill { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(.22,1,.36,1); }
 
-    /* Main 2-col */
-    .main {
-      display: grid;
-      grid-template-columns: 40% 60%;
-      flex: 1;
-    }
-
-    /* AI Coach */
-    .ai-col {
-      padding: 1.5rem;
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
+    /* ── Section layout ──────────────────────────────── */
     .section-title {
       font-family: 'Bebas Neue', cursive;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       letter-spacing: 2px;
       color: var(--accent);
-      margin-bottom: 0.5rem;
+      margin-bottom: .625rem;
     }
-    .status-badge {
-      display: inline-flex;
+    .section-row {
+      display: flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.875rem;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
+      justify-content: space-between;
+      margin-bottom: .625rem;
     }
-    .badge-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-    .coach-summary {
-      line-height: 1.75;
-      font-size: 0.9rem;
-      min-height: 3rem;
-    }
-    .cursor::after {
-      content: '|';
-      color: var(--accent);
-      animation: blink 0.7s infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-    .workout-card {
+    /* ── Cards ───────────────────────────────────────── */
+    .card {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.25rem;
-    }
-    .workout-title {
-      font-family: 'Bebas Neue', cursive;
-      font-size: 1.75rem;
-      letter-spacing: 2px;
-      margin-bottom: 0.5rem;
-    }
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin: 0.6rem 0;
-    }
-    .tag {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      padding: 0.3rem 0.65rem;
-      border-radius: 6px;
-      font-family: 'Space Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--accent);
-    }
-    .workout-detail {
-      font-size: 0.83rem;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-    .warnings {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .warn-item {
-      background: rgba(255,92,53,0.08);
-      border: 1px solid rgba(255,92,53,0.25);
-      border-radius: 8px;
-      padding: 0.55rem 0.875rem;
-      font-size: 0.8rem;
-      color: var(--rest);
-    }
-    .sleep-tip {
-      background: rgba(200,241,53,0.05);
-      border: 1px solid rgba(200,241,53,0.12);
-      border-radius: 8px;
-      padding: 0.75rem 0.875rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-    .sleep-tip strong { color: var(--accent); }
-    .spinner {
-      width: 28px;
-      height: 28px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.75s linear infinite;
-      margin: 0 auto;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.875rem;
-      padding: 2rem;
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-
-    /* Metrics col */
-    .metrics-col {
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-      overflow-y: auto;
-    }
-    .metric-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
     }
     .mcard {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.1rem 1.25rem;
-      animation: fadeUp 0.4s ease both;
+      padding: 1rem 1.1rem;
+      animation: fadeUp .4s ease both;
     }
-    .mcard-label {
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-bottom: 0.4rem;
-    }
-    .mcard-value {
-      font-family: 'Space Mono', monospace;
-      font-size: 1.5rem;
-    }
-    .mcard-unit {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-left: 0.2rem;
-    }
-    .mcard-sub {
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: 0.2rem;
+    .mcard-label { font-size: .67rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: .3rem; }
+    .mcard-value { font-family: 'Space Mono', monospace; font-size: 1.45rem; }
+    .mcard-unit  { font-size: .72rem; color: var(--muted); margin-left: .2rem; }
+    .mcard-sub   { font-size: .7rem; color: var(--muted); margin-top: .15rem; }
+
+    /* ── Metrics row (4 cols) ────────────────────────── */
+    .metrics-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .75rem;
+      margin-bottom: 1.25rem;
     }
 
-    /* Sleep stages */
-    .stages {
+    /* ── Sleep redesign ──────────────────────────────── */
+    .sleep-header {
       display: flex;
-      gap: 0.75rem;
-      align-items: flex-end;
-      height: 80px;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
-    .stage-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; }
-    .stage-bar-bg {
-      width: 100%;
-      background: var(--bg3);
-      border-radius: 4px;
-      height: 60px;
-      overflow: hidden;
-      position: relative;
-    }
-    .stage-bar-fill {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      border-radius: 4px;
-      transition: height 1s cubic-bezier(0.22,1,0.36,1);
-    }
-    .stage-lbl {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-top: 0.35rem;
-    }
-    .stage-val {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.72rem;
-      margin-top: 0.15rem;
-    }
+    .sleep-time-block { text-align: center; }
+    .sleep-time-label { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .sleep-time-value { font-family: 'Bebas Neue', cursive; font-size: 1.8rem; color: var(--text); letter-spacing: 1px; line-height: 1.1; }
+    .sleep-arrow      { font-size: 1.1rem; color: var(--muted); flex: 1; text-align: center; }
+    .sleep-total-block { margin-left: auto; text-align: right; }
+    .sleep-hours-big  { font-family: 'Bebas Neue', cursive; font-size: 3rem; line-height: 1; }
+    .sleep-hours-unit { font-size: .75rem; color: var(--muted); }
 
-    /* Chart */
+    /* horizontal stage bars */
+    .stage-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .45rem; }
+    .stage-name { font-size: .7rem; color: var(--muted); width: 36px; flex-shrink: 0; text-align: right; }
+    .stage-bar-wrap { flex: 1; background: var(--bg3); border-radius: 3px; height: 8px; overflow: hidden; }
+    .stage-bar-fill { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.22,1,.36,1); }
+    .stage-dur { font-size: .72rem; font-family: 'Space Mono', monospace; color: var(--text); width: 56px; flex-shrink: 0; }
+
+    /* ── Trend chart ─────────────────────────────────── */
     .chart-card {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.25rem;
-    }
-    .chart-legend {
-      display: flex;
-      gap: 1.25rem;
-      margin-top: 0.75rem;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.72rem;
-      color: var(--muted);
-    }
-    .legend-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-
-    /* Travel */
-    .travel-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
       padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
     }
-    .travel-opts {
-      display: flex;
-      gap: 0.6rem;
-      margin-top: 0.75rem;
+    .chart-view-tabs { display: flex; gap: .35rem; }
+    .chart-view-tab {
+      padding: .25rem .6rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-size: .7rem;
+      font-family: 'Space Mono', monospace;
+      cursor: pointer;
+      transition: all .2s;
     }
+    .chart-view-tab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+    .chart-legend { display: flex; gap: 1rem; margin-top: .6rem; flex-wrap: wrap; }
+    .legend-item  { display: flex; align-items: center; gap: .35rem; font-size: .68rem; color: var(--muted); }
+    .legend-dot   { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── Travel ──────────────────────────────────────── */
+    .travel-opts { display: flex; gap: .6rem; margin-top: .6rem; }
     .travel-btn {
       flex: 1;
-      padding: 0.6rem 0.5rem;
+      padding: .6rem .5rem;
       background: var(--bg3);
       border: 1px solid var(--border);
       border-radius: 8px;
       color: var(--muted);
       font-family: 'Noto Sans Thai', sans-serif;
-      font-size: 0.78rem;
+      font-size: .78rem;
       cursor: pointer;
       text-align: center;
       line-height: 1.4;
-      transition: all 0.2s;
+      transition: all .2s;
     }
-    .travel-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .travel-btn.active {
-      background: rgba(200,241,53,0.08);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    .travel-btn:hover  { border-color: var(--accent); color: var(--accent); }
+    .travel-btn.active { background: rgba(200,241,53,.08); border-color: var(--accent); color: var(--accent); }
 
-    /* Garmin */
-    .garmin-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.1rem 1.25rem;
-    }
-
-    /* Error */
+    /* ── Garmin / Commute ────────────────────────────── */
     .err-card {
-      background: rgba(255,92,53,0.07);
-      border: 1px solid rgba(255,92,53,0.25);
-      border-radius: 12px;
-      padding: 1.1rem 1.25rem;
+      background: rgba(255,92,53,.07);
+      border: 1px solid rgba(255,92,53,.25);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
       color: var(--rest);
-      font-size: 0.85rem;
+      font-size: .85rem;
       line-height: 1.6;
     }
 
-    /* Skeleton */
-    .skeleton {
-      background: linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 6px;
-    }
-    @keyframes shimmer {
-      0%   { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* Footer */
-    .footer {
+    /* ── N-BOT tab ───────────────────────────────────── */
+    .nbot-usage-bar {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 0.875rem 1.5rem;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-    }
-    .footer-sync {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--muted);
-    }
-    .footer-btns { display: flex; gap: 0.6rem; align-items: center; }
-
-    /* Animations */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Divider */
-    .divider { border: none; border-top: 1px solid var(--border); }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    /* Responsive (base) */
-    @media (max-width: 768px) {
-      .travel-opts { flex-wrap: wrap; }
-    }
-    @media (max-width: 480px) {
-      .vital-score { font-size: 2.4rem; }
-      .header-date { display: none; }
-    }
-
-    /* ── N-BOT Chat ───────────────────────────────────── */
-    .nbot-wrap {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      min-height: 0;
-    }
-    .nbot-header {
-      display: flex;
       align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .7rem 1rem;
+      margin-bottom: 1rem;
+      font-size: .8rem;
+      gap: 1rem;
     }
-    .nbot-name {
-      font-family: 'Bebas Neue', cursive;
-      font-size: 1.5rem;
-      letter-spacing: 2px;
-      color: var(--accent);
-    }
-    .nbot-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--optimal);
-      box-shadow: 0 0 6px var(--optimal);
-      animation: pulse 2s infinite;
-    }
-    .nbot-status { font-size: .72rem; color: var(--optimal); font-family: 'Space Mono', monospace; }
+    .nbot-usage-bar strong { color: var(--accent); }
+    .nbot-usage-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .2rem; }
 
-    .period-tabs {
-      display: flex;
-      gap: 0.35rem;
-      margin-bottom: 0.75rem;
-    }
+    .nbot-header { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
+    .nbot-name   { font-family: 'Bebas Neue', cursive; font-size: 1.5rem; letter-spacing: 2px; color: var(--accent); }
+    .nbot-dot    { width: 8px; height: 8px; border-radius: 50%; background: var(--optimal); box-shadow: 0 0 6px var(--optimal); animation: pulse 2s infinite; }
+    .nbot-status { font-size: .7rem; color: var(--optimal); font-family: 'Space Mono', monospace; }
+
+    .period-tabs { display: flex; gap: .35rem; margin-bottom: .75rem; }
     .period-tab {
       flex: 1;
-      padding: 0.35rem 0;
+      padding: .35rem 0;
       background: var(--bg3);
       border: 1px solid var(--border);
       border-radius: 6px;
       color: var(--muted);
-      font-size: .75rem;
+      font-size: .73rem;
       font-family: 'Space Mono', monospace;
       cursor: pointer;
       text-align: center;
       transition: all .2s;
     }
-    .period-tab.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #000;
-      font-weight: 700;
-    }
+    .period-tab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
 
     .chat-messages {
-      flex: 1;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      padding: 0.5rem 0;
-      min-height: 200px;
-      max-height: 380px;
+      gap: .75rem;
+      padding: .5rem 0;
+      height: 420px;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
     }
     .bubble {
       max-width: 85%;
       border-radius: 12px;
-      padding: 0.65rem 0.875rem;
+      padding: .65rem .875rem;
       font-size: .88rem;
-      line-height: 1.5;
+      line-height: 1.55;
     }
-    .bubble-bot {
-      align-self: flex-start;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 3px;
-    }
-    .bubble-user {
-      align-self: flex-end;
-      background: var(--accent);
-      color: #000;
-      border-bottom-right-radius: 3px;
-      font-weight: 500;
-    }
-    .bubble-meta {
-      margin-top: 0.35rem;
-      font-size: .68rem;
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-    }
-    .bubble-thinking {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      padding: 0.65rem 0.875rem;
-    }
+    .bubble-bot  { align-self: flex-start; background: var(--bg3); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+    .bubble-user { align-self: flex-end; background: var(--accent); color: #000; border-bottom-right-radius: 3px; font-weight: 500; }
+    .bubble-meta { margin-top: .35rem; font-size: .65rem; color: var(--muted); font-family: 'Space Mono', monospace; }
+    .bubble-thinking { display: flex; gap: 4px; align-items: center; padding: .65rem .875rem; }
     .bubble-thinking span {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--muted);
-      animation: bounce 1.2s infinite;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted); animation: bounce 1.2s infinite;
     }
     .bubble-thinking span:nth-child(2) { animation-delay: .2s; }
     .bubble-thinking span:nth-child(3) { animation-delay: .4s; }
-    @keyframes bounce {
-      0%,80%,100% { transform: translateY(0); opacity:.4; }
-      40% { transform: translateY(-6px); opacity:1; }
-    }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-6px);opacity:1} }
 
-    .question-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.75rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--border);
-    }
+    .question-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--border); }
     .chip {
-      padding: 0.4rem 0.75rem;
+      padding: .38rem .75rem;
       background: var(--bg3);
       border: 1px solid var(--border);
       border-radius: 20px;
@@ -675,17 +368,49 @@
       font-family: 'Noto Sans Thai', sans-serif;
     }
     .chip:hover { border-color: var(--accent); color: var(--accent); }
-    .chip:disabled, .chip.disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      pointer-events: none;
+    .chip.disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+
+    /* ── Data tab ────────────────────────────────────── */
+    .data-period-tabs { display: flex; gap: .25rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .data-period-tab {
+      padding: .3rem .6rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: .7rem;
+      font-family: 'Space Mono', monospace;
+      cursor: pointer;
+      transition: all .2s;
     }
+    .data-period-tab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+    .data-metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: .6rem; margin-bottom: 1rem; }
+    .data-metric-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: .75rem; }
+    .data-metric-label { font-size: .63rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .2rem; }
+    .data-metric-value { font-family: 'Bebas Neue', cursive; font-size: 1.6rem; line-height: 1; }
+    .data-metric-unit  { font-size: .68rem; color: var(--muted); }
+    .data-insight-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: .875rem; }
+    .data-insight-title { font-size: .68rem; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; }
+    .data-insight-row  { font-size: .82rem; color: var(--text); line-height: 1.9; }
 
-    /* ── Responsive ──────────────────────────────────── */
-    .page { display: none; }
-    .page.active { display: block; }
+    /* ── Misc ────────────────────────────────────────── */
+    .spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .75s linear infinite; margin: 0 auto; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .skeleton { background: linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-    /* Mobile bottom nav */
+    /* Footer */
+    .footer { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1.5rem; border-top: 1px solid var(--border); background: var(--bg); }
+    .footer-sync { font-family: 'Space Mono', monospace; font-size: .7rem; color: var(--muted); }
+    .footer-btns { display: flex; gap: .5rem; align-items: center; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Bottom Nav (mobile) ─────────────────────────── */
     .bottom-nav {
       display: none;
       position: fixed;
@@ -695,10 +420,7 @@
       z-index: 100;
       height: 56px;
     }
-    .bottom-nav-inner {
-      display: flex;
-      height: 100%;
-    }
+    .bottom-nav-inner { display: flex; height: 100%; }
     .nav-tab {
       flex: 1;
       display: flex;
@@ -706,7 +428,7 @@
       align-items: center;
       justify-content: center;
       gap: 2px;
-      font-size: .65rem;
+      font-size: .63rem;
       color: var(--muted);
       cursor: pointer;
       transition: color .2s;
@@ -717,135 +439,52 @@
     .nav-tab.active { color: var(--accent); }
     .nav-tab svg { width: 20px; height: 20px; }
 
-    @media (max-width: 768px) {
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 900px) {
+      .metrics-4 { grid-template-columns: repeat(2,1fr); }
+      .data-metrics-grid { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 600px) {
       .bottom-nav { display: block; }
-      #dashboard { padding-bottom: 64px; }
-      .main { flex-direction: column; }
-      .ai-col { width: 100% !important; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); }
-      .metrics-col { width: 100%; }
-      .vital-strip { grid-template-columns: 1fr 1fr; }
-      .metric-row { grid-template-columns: 1fr 1fr; }
-      .stage-val { font-size: .85rem; }
-
-      /* Hide desktop N-BOT and metrics on mobile - use tabs instead */
-      body.mobile-dash .ai-col { display: none; }
-      body.mobile-data .ai-col { display: none; }
-      body.mobile-nbot .metrics-col { display: none; }
-      body.mobile-nbot .vital-strip { display: none; }
-      body.mobile-data .metrics-col { display: none; }
-      body.mobile-data .vital-strip { display: none; }
-      body.mobile-dash .metrics-col { display: block; }
-      body.mobile-dash .vital-strip { display: grid; }
+      .top-tabs   { display: none; }
+      .tab-panel  { padding: 1rem; padding-bottom: 72px; }
+      .vital-strip { grid-template-columns: repeat(2,1fr); }
+      .vital-score { font-size: 2.2rem; }
+      .header-date { display: none; }
+      .metrics-4 { grid-template-columns: repeat(2,1fr); }
+      .travel-opts { flex-wrap: wrap; }
+      .chat-messages { height: 340px; }
     }
-
-    @media (min-width: 769px) {
-      .bottom-nav { display: none !important; }
-      #data-tab-section { display: block; }
-    }
-
-    /* ── Sleep Card redesign ─────────────────────────── */
-    .sleep-time-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-    }
-    .sleep-time-block {
-      text-align: center;
-    }
-    .sleep-time-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-    .sleep-time-value { font-family: 'Bebas Neue', cursive; font-size: 1.6rem; color: var(--text); letter-spacing: 1px; }
-    .sleep-time-arrow { font-size: 1.2rem; color: var(--muted); flex: 1; text-align: center; }
-    .sleep-hours-big { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; color: var(--accent); line-height: 1; }
-    .sleep-hours-unit { font-size: .8rem; color: var(--muted); }
-
-    /* ── Data Tab ─────────────────────────────────────── */
-    #data-tab-section { margin-top: 1rem; }
-    .data-period-tabs {
-      display: flex;
-      gap: 0.25rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-    .data-period-tab {
-      padding: 0.3rem 0.6rem;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--muted);
-      font-size: .72rem;
-      font-family: 'Space Mono', monospace;
-      cursor: pointer;
-      transition: all .2s;
-    }
-    .data-period-tab.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #000;
-      font-weight: 700;
-    }
-    .data-metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    @media (max-width: 768px) {
-      .data-metrics-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    .data-metric-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.75rem;
-    }
-    .data-metric-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0.25rem; }
-    .data-metric-value { font-family: 'Bebas Neue', cursive; font-size: 1.6rem; line-height: 1; }
-    .data-metric-unit { font-size: .7rem; color: var(--muted); }
-    .data-metric-sub { font-size: .68rem; color: var(--muted); margin-top: 0.2rem; }
-    .data-insight-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.875rem;
-      margin-bottom: 0.75rem;
-    }
-    .data-insight-title { font-size: .7rem; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 0.5rem; }
-    .data-insight-row { font-size: .8rem; color: var(--text); line-height: 1.8; }
   </style>
 </head>
 <body>
 
 <!-- ══ SETTINGS PANEL ══════════════════════════════════════════ -->
-<div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
+<div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center">
   <div class="setup-card" style="max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
       <div class="setup-logo" style="font-size:2rem">SETTINGS</div>
       <button onclick="closeSettings()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
     </div>
-
     <div class="form-group">
       <label>Oura Personal Access Token</label>
       <input type="password" id="oura-token" placeholder="XKJ5..." autocomplete="off">
     </div>
-
     <div class="form-group">
       <label>Gemini API Key</label>
       <input type="password" id="claude-key" placeholder="AIzaSy..." autocomplete="off">
     </div>
-
     <div class="form-group">
-      <label>Garmin JSON <span style="color:var(--muted);text-transform:none;font-size:0.8em">(optional)</span></label>
+      <label>Garmin JSON <span style="color:var(--muted);text-transform:none;font-size:.8em">(optional)</span></label>
       <textarea id="garmin-setup" placeholder='{"date":"...","body_battery":75,...}'></textarea>
     </div>
-
     <button class="btn" onclick="setupSave()">บันทึก</button>
-    <div id="setup-err"></div>
+    <div id="setup-err" style="margin-top:.75rem;color:var(--rest);font-size:.82rem;display:none"></div>
   </div>
 </div>
 
 <!-- ══ MAIN DASHBOARD ══════════════════════════════════════════ -->
-<div id="dashboard" style="display:flex">
+<div id="dashboard">
 
   <!-- Header -->
   <header class="header">
@@ -857,183 +496,206 @@
     </div>
   </header>
 
-  <!-- Vital Strip -->
-  <div class="vital-strip" id="vital-strip">
-    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
-    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
-    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
-    <div class="vital-card"><div class="skeleton" style="height:88px"></div></div>
-  </div>
+  <!-- Top tabs (desktop) -->
+  <nav class="top-tabs">
+    <button class="top-tab active" data-tab="dash" onclick="switchTab('dash',this)">
+      Dashboard
+    </button>
+    <button class="top-tab" data-tab="nbot" onclick="switchTab('nbot',this)">
+      N-BOT
+    </button>
+    <button class="top-tab" data-tab="data" onclick="switchTab('data',this)">
+      Data
+    </button>
+  </nav>
 
-  <!-- Main Content -->
-  <div class="main">
+  <!-- ── TAB: DASHBOARD ──────────────────────────────── -->
+  <div class="tab-panel active" id="tab-dash">
 
-    <!-- N-BOT Chat (left 40%) -->
-    <section class="ai-col" id="ai-col">
-      <div class="nbot-wrap">
-        <div class="nbot-header">
-          <div class="nbot-name">N-BOT</div>
-          <div class="nbot-dot"></div>
-          <div class="nbot-status">online</div>
+    <!-- Vital Strip -->
+    <div class="vital-strip" id="vital-strip">
+      <div class="vital-card"><div class="skeleton" style="height:76px"></div></div>
+      <div class="vital-card"><div class="skeleton" style="height:76px"></div></div>
+      <div class="vital-card"><div class="skeleton" style="height:76px"></div></div>
+      <div class="vital-card"><div class="skeleton" style="height:76px"></div></div>
+    </div>
+
+    <!-- Sleep -->
+    <div class="section-title">SLEEP</div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <div id="sleep-stages">
+        <div class="skeleton" style="height:100px"></div>
+      </div>
+    </div>
+
+    <!-- Metrics row -->
+    <div class="section-title">ACTIVITY</div>
+    <div class="metrics-4" id="activity-metrics">
+      <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+      <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+      <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+      <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="section-row">
+      <div class="section-title" style="margin:0">TREND</div>
+      <div class="chart-view-tabs">
+        <button class="chart-view-tab active" data-view="7d" onclick="setChartView('7d',this)">7วัน</button>
+        <button class="chart-view-tab" data-view="30d" onclick="setChartView('30d',this)">30วัน</button>
+        <button class="chart-view-tab" data-view="1y" onclick="setChartView('1y',this)">1ปี</button>
+      </div>
+    </div>
+    <div class="chart-card">
+      <canvas id="trend-chart" style="width:100%;display:block"></canvas>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#35f18a"></div>Readiness</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c8f135"></div>Sleep</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>HRV</div>
+        <div style="margin-left:auto;font-size:.65rem;color:var(--muted)">แกน Y ซ้าย: Score 0-100 | แกน Y ขวา: HRV (ms)</div>
+      </div>
+    </div>
+
+    <!-- Travel -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="section-title">การเดินทางวันนี้</div>
+      <div class="travel-opts">
+        <div class="travel-btn active" onclick="setTravel(0,this)">🏠 น้อย<br><small>WFH</small></div>
+        <div class="travel-btn" onclick="setTravel(1,this)">🚗 ปานกลาง</div>
+        <div class="travel-btn" onclick="setTravel(2,this)">✈️ เยอะมาก<br><small>เดินทางทั้งวัน</small></div>
+      </div>
+    </div>
+
+    <!-- Commute -->
+    <div class="card" id="commute-card" style="margin-bottom:1.25rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <div class="section-title" style="margin:0">COMMUTE</div>
+        <div id="commute-badge" style="font-size:.7rem;color:var(--muted);font-family:'Space Mono',monospace">วันนี้</div>
+      </div>
+      <div id="commute-display" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.75rem">
+        <div class="mcard" style="padding:.65rem">
+          <div class="mcard-label">ออกบ้าน</div>
+          <div class="mcard-value" id="c-leave-home" style="font-size:1.3rem">—</div>
         </div>
-
-        <div class="period-tabs">
-          <div class="period-tab active" onclick="selectPeriod('1d',this)">1วัน</div>
-          <div class="period-tab" onclick="selectPeriod('3d',this)">3วัน</div>
-          <div class="period-tab" onclick="selectPeriod('7d',this)">7วัน</div>
-          <div class="period-tab" onclick="selectPeriod('1m',this)">1เดือน</div>
-          <div class="period-tab" onclick="selectPeriod('1y',this)">1ปี</div>
+        <div class="mcard" style="padding:.65rem">
+          <div class="mcard-label">ถึงงาน</div>
+          <div class="mcard-value" id="c-arrive-work" style="font-size:1.3rem">—</div>
         </div>
-
-        <div class="chat-messages" id="chat-messages">
-          <div class="bubble bubble-bot">สวัสดีครับ! ผม N-BOT 👋<br>เลือกช่วงเวลาแล้วกดคำถามได้เลย</div>
+        <div class="mcard" style="padding:.65rem">
+          <div class="mcard-label">ออกงาน</div>
+          <div class="mcard-value" id="c-leave-work" style="font-size:1.3rem">—</div>
         </div>
-
-        <div class="question-chips" id="question-chips">
-          <!-- chips inserted by JS -->
+        <div class="mcard" style="padding:.65rem">
+          <div class="mcard-label">ถึงบ้าน</div>
+          <div class="mcard-value" id="c-arrive-home" style="font-size:1.3rem">—</div>
         </div>
       </div>
-    </section>
+      <div id="commute-min-display" style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem"></div>
+      <details style="font-size:.8rem">
+        <summary style="cursor:pointer;color:var(--muted);margin-bottom:.5rem">✎ บันทึกเวลาเดินทางเอง</summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.5rem">
+          <div><label>ออกบ้าน</label><input type="time" id="ci-leave-home" style="padding:.4rem;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%"></div>
+          <div><label>ถึงงาน</label><input type="time" id="ci-arrive-work" style="padding:.4rem;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%"></div>
+          <div><label>ออกงาน</label><input type="time" id="ci-leave-work" style="padding:.4rem;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%"></div>
+          <div><label>ถึงบ้าน</label><input type="time" id="ci-arrive-home" style="padding:.4rem;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%"></div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="saveCommute()" style="margin-top:.5rem">บันทึก</button>
+      </details>
+    </div>
 
-    <!-- Metrics (right 60%) -->
-    <section class="metrics-col">
+    <!-- Garmin -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <div class="section-title" style="margin:0">GARMIN</div>
+        <div id="garmin-server-badge" style="font-size:.7rem;color:var(--muted);font-family:'Space Mono',monospace">⏳ ตรวจสอบ...</div>
+      </div>
+      <div id="garmin-display"><div class="mcard-label">ไม่มีข้อมูล Garmin</div></div>
+      <div style="margin-top:.875rem" id="garmin-paste-section">
+        <label>Paste Garmin JSON <span style="color:var(--muted);font-size:.8em">(ถ้า server ไม่รัน)</span></label>
+        <textarea id="garmin-paste" style="height:64px;margin-bottom:.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem;color:var(--text);width:100%;font-size:.8rem" placeholder='{"date":"...","body_battery":75,...}'></textarea>
+        <button class="btn btn-outline btn-sm" onclick="loadGarmin()">โหลด</button>
+        <button class="btn btn-outline btn-sm" onclick="retryGarminServer()" style="margin-left:.5rem">↻ ลอง Server</button>
+      </div>
+    </div>
 
-      <!-- Sleep -->
+  </div><!-- end #tab-dash -->
+
+  <!-- ── TAB: N-BOT ──────────────────────────────────── -->
+  <div class="tab-panel" id="tab-nbot">
+
+    <!-- Usage overview -->
+    <div class="nbot-usage-bar">
       <div>
-        <div class="section-title">SLEEP</div>
-        <div class="mcard">
-          <div class="mcard-label">การนอนคืนที่ผ่านมา</div>
-          <div class="stages" id="sleep-stages">
-            <div class="skeleton" style="flex:1;height:60px"></div>
-          </div>
-        </div>
+        <div class="nbot-usage-label">วันนี้</div>
+        <div><strong id="usage-today-count">0</strong> ครั้ง &nbsp;·&nbsp; <strong id="usage-today-thb">฿0.00</strong></div>
       </div>
-
-      <!-- Activity -->
+      <div style="width:1px;background:var(--border);align-self:stretch"></div>
       <div>
-        <div class="section-title">ACTIVITY</div>
-        <div class="metric-row" id="activity-metrics">
-          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
-          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
-          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
-          <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
-        </div>
+        <div class="nbot-usage-label">รวมทั้งหมด</div>
+        <div><strong id="usage-total-count">0</strong> ครั้ง &nbsp;·&nbsp; <strong id="usage-total-thb">฿0.00</strong></div>
       </div>
+      <button onclick="clearNbotUsage()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:.68rem;padding:.25rem .5rem;cursor:pointer;margin-left:auto">รีเซ็ต</button>
+    </div>
 
-      <!-- 7-Day Trend -->
-      <div>
-        <div class="section-title">7-DAY TREND</div>
-        <div class="chart-card">
-          <canvas id="trend-chart" style="width:100%;height:90px;display:block"></canvas>
-          <div class="chart-legend">
-            <div class="legend-item">
-              <div class="legend-dot" style="background:#35f18a"></div>Readiness
-            </div>
-            <div class="legend-item">
-              <div class="legend-dot" style="background:#c8f135"></div>Sleep
-            </div>
-          </div>
-        </div>
+    <!-- Chat -->
+    <div class="nbot-header">
+      <div class="nbot-name">N-BOT</div>
+      <div class="nbot-dot"></div>
+      <div class="nbot-status">online</div>
+    </div>
+
+    <div class="period-tabs">
+      <div class="period-tab active" onclick="selectPeriod('1d',this)">1วัน</div>
+      <div class="period-tab" onclick="selectPeriod('3d',this)">3วัน</div>
+      <div class="period-tab" onclick="selectPeriod('7d',this)">7วัน</div>
+      <div class="period-tab" onclick="selectPeriod('1m',this)">1เดือน</div>
+      <div class="period-tab" onclick="selectPeriod('1y',this)">1ปี</div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="bubble bubble-bot">สวัสดีครับ! ผม N-BOT 👋<br>เลือกช่วงเวลาแล้วกดคำถามได้เลย</div>
+    </div>
+
+    <div class="question-chips" id="question-chips"></div>
+
+  </div><!-- end #tab-nbot -->
+
+  <!-- ── TAB: DATA ───────────────────────────────────── -->
+  <div class="tab-panel" id="tab-data">
+
+    <div class="data-period-tabs">
+      <div class="data-period-tab active" onclick="selectDataPeriod('1d',this)">1วัน</div>
+      <div class="data-period-tab" onclick="selectDataPeriod('3d',this)">3วัน</div>
+      <div class="data-period-tab" onclick="selectDataPeriod('7d',this)">7วัน</div>
+      <div class="data-period-tab" onclick="selectDataPeriod('1m',this)">1เดือน</div>
+      <div class="data-period-tab" onclick="selectDataPeriod('3m',this)">3เดือน</div>
+      <div class="data-period-tab" onclick="selectDataPeriod('6m',this)">6เดือน</div>
+      <div class="data-period-tab" onclick="selectDataPeriod('1y',this)">1ปี</div>
+      <div class="data-period-tab" onclick="selectDataPeriod('all',this)">All</div>
+    </div>
+
+    <div class="data-metrics-grid" id="data-metrics-grid">
+      <div class="data-metric-card"><div class="skeleton" style="height:40px"></div></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="section-row" style="margin-bottom:.75rem">
+        <span style="font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace">Y ซ้าย: 0–100 (Score) &nbsp;|&nbsp; Y ขวา: HRV ms</span>
       </div>
-
-      <!-- Travel -->
-      <div class="travel-card">
-        <div class="section-title">การเดินทางวันนี้</div>
-        <div class="travel-opts">
-          <div class="travel-btn active" onclick="setTravel(0,this)">🏠 น้อย<br><small>WFH</small></div>
-          <div class="travel-btn" onclick="setTravel(1,this)">🚗 ปานกลาง</div>
-          <div class="travel-btn" onclick="setTravel(2,this)">✈️ เยอะมาก<br><small>เดินทางทั้งวัน</small></div>
-        </div>
+      <canvas id="data-trend-chart" style="width:100%;display:block"></canvas>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#35f18a"></div>Readiness</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c8f135"></div>Sleep</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>HRV</div>
       </div>
+    </div>
 
-      <!-- Commute -->
-      <div class="garmin-card" id="commute-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-          <div class="section-title" style="margin:0">COMMUTE</div>
-          <div id="commute-badge" style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace">วันนี้</div>
-        </div>
-        <div id="commute-display" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.75rem">
-          <div class="mcard" style="padding:.75rem">
-            <div class="mcard-label">ออกบ้าน</div>
-            <div class="mcard-value" id="c-leave-home" style="font-size:1.4rem">—</div>
-          </div>
-          <div class="mcard" style="padding:.75rem">
-            <div class="mcard-label">ถึงงาน</div>
-            <div class="mcard-value" id="c-arrive-work" style="font-size:1.4rem">—</div>
-          </div>
-          <div class="mcard" style="padding:.75rem">
-            <div class="mcard-label">ออกงาน</div>
-            <div class="mcard-value" id="c-leave-work" style="font-size:1.4rem">—</div>
-          </div>
-          <div class="mcard" style="padding:.75rem">
-            <div class="mcard-label">ถึงบ้าน</div>
-            <div class="mcard-value" id="c-arrive-home" style="font-size:1.4rem">—</div>
-          </div>
-        </div>
-        <div id="commute-min-display" style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem"></div>
-        <details style="font-size:.8rem">
-          <summary style="cursor:pointer;color:var(--muted);margin-bottom:.5rem">✎ บันทึกเวลาเดินทางเอง</summary>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.5rem">
-            <div><label style="font-size:.72rem;color:var(--muted)">ออกบ้าน</label><input type="time" id="ci-leave-home" class="input" style="padding:.4rem"></div>
-            <div><label style="font-size:.72rem;color:var(--muted)">ถึงงาน</label><input type="time" id="ci-arrive-work" class="input" style="padding:.4rem"></div>
-            <div><label style="font-size:.72rem;color:var(--muted)">ออกงาน</label><input type="time" id="ci-leave-work" class="input" style="padding:.4rem"></div>
-            <div><label style="font-size:.72rem;color:var(--muted)">ถึงบ้าน</label><input type="time" id="ci-arrive-home" class="input" style="padding:.4rem"></div>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="saveCommute()" style="margin-top:.5rem">บันทึก</button>
-        </details>
-      </div>
+    <div class="data-insight-card" id="data-insight-card">
+      <div class="data-insight-title">INSIGHT</div>
+      <div class="data-insight-row" id="data-insight-text">เลือกช่วงเวลาเพื่อดู insight</div>
+    </div>
 
-      <!-- Garmin -->
-      <div class="garmin-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-          <div class="section-title" style="margin:0">GARMIN</div>
-          <div id="garmin-server-badge" style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace">
-            ⏳ ตรวจสอบ server...
-          </div>
-        </div>
-        <div id="garmin-display">
-          <div class="mcard-label">ไม่มีข้อมูล Garmin</div>
-        </div>
-        <div style="margin-top:0.875rem" id="garmin-paste-section">
-          <label>Paste Garmin JSON <span style="color:var(--muted);font-size:.8em">(ถ้า server ไม่รัน)</span></label>
-          <textarea id="garmin-paste" style="height:72px;margin-bottom:0.5rem" placeholder='{"date":"...","body_battery":75,...}'></textarea>
-          <button class="btn btn-outline btn-sm" onclick="loadGarmin()">โหลด</button>
-          <button class="btn btn-outline btn-sm" onclick="retryGarminServer()" style="margin-left:.5rem">↻ ลอง Server</button>
-        </div>
-      </div>
-
-      <!-- Data Tab -->
-      <div id="data-tab-section">
-        <div class="section-title">DATA OVERVIEW</div>
-        <div class="data-period-tabs">
-          <div class="data-period-tab active" onclick="selectDataPeriod('1d',this)">1วัน</div>
-          <div class="data-period-tab" onclick="selectDataPeriod('3d',this)">3วัน</div>
-          <div class="data-period-tab" onclick="selectDataPeriod('7d',this)">7วัน</div>
-          <div class="data-period-tab" onclick="selectDataPeriod('1m',this)">1เดือน</div>
-          <div class="data-period-tab" onclick="selectDataPeriod('3m',this)">3เดือน</div>
-          <div class="data-period-tab" onclick="selectDataPeriod('6m',this)">6เดือน</div>
-          <div class="data-period-tab" onclick="selectDataPeriod('1y',this)">1ปี</div>
-          <div class="data-period-tab" onclick="selectDataPeriod('all',this)">All</div>
-        </div>
-        <div class="data-metrics-grid" id="data-metrics-grid">
-          <div class="data-metric-card"><div class="data-metric-label">Loading...</div></div>
-        </div>
-        <div class="chart-card" style="margin-bottom:0.75rem">
-          <canvas id="data-trend-chart" style="width:100%;height:100px;display:block"></canvas>
-          <div class="chart-legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#35f18a"></div>Readiness</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#c8f135"></div>Sleep</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>HRV</div>
-          </div>
-        </div>
-        <div class="data-insight-card" id="data-insight-card">
-          <div class="data-insight-title">INSIGHT</div>
-          <div class="data-insight-row" id="data-insight-text">เลือกช่วงเวลาเพื่อดู insight</div>
-        </div>
-      </div>
-
-    </section>
-  </div>
+  </div><!-- end #tab-data -->
 
   <!-- Footer -->
   <footer class="footer">
@@ -1044,114 +706,62 @@
     </div>
   </footer>
 
-  <!-- Bottom Nav (mobile only) -->
+  <!-- Bottom Nav (mobile) -->
   <nav class="bottom-nav">
     <div class="bottom-nav-inner">
-      <button class="nav-tab active" id="nav-dash" onclick="switchMobileTab('dash',this)">
+      <button class="nav-tab active" data-tab="dash" onclick="switchTab('dash',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Dashboard
       </button>
-      <button class="nav-tab" id="nav-data" onclick="switchMobileTab('data',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Data
-      </button>
-      <button class="nav-tab" id="nav-nbot" onclick="switchMobileTab('nbot',this)">
+      <button class="nav-tab" data-tab="nbot" onclick="switchTab('nbot',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         N-BOT
+      </button>
+      <button class="nav-tab" data-tab="data" onclick="switchTab('data',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Data
       </button>
     </div>
   </nav>
 
-</div>
+</div><!-- end #dashboard -->
 
 <script>
 'use strict'
 
 // ── Config ──────────────────────────────────────────────────────
-const SK = {
-  OURA:   'hd_oura_token',
-  CLAUDE: 'hd_gemini_key',
-  HIST:   'hd_history',
-  GARMIN: 'hd_garmin_json',
-}
-// ── Proxy config ──────────────────────────────────────────────────
-// ถ้า HD_CONFIG.PROXY_URL ถูกตั้งค่า → ใช้ Cloudflare Worker (ซ่อน key)
-// ถ้าไม่มี → ส่ง request ตรง (ต้องมี token ใน localStorage)
-const PROXY_URL      = (window.HD_CONFIG || {}).PROXY_URL || 'https://health-proxy.ideaplanstudio.workers.dev'
-const OURA_BASE      = PROXY_URL ? `${PROXY_URL}/oura` : 'https://api.ouraring.com/v2'
-const GEMINI_PROXY   = PROXY_URL ? `${PROXY_URL}/gemini` : ''
+const SK = { OURA:'hd_oura_token', CLAUDE:'hd_gemini_key', HIST:'hd_history', GARMIN:'hd_garmin_json' }
+const PROXY_URL    = (window.HD_CONFIG||{}).PROXY_URL || 'https://health-proxy.ideaplanstudio.workers.dev'
+const OURA_BASE    = PROXY_URL ? `${PROXY_URL}/oura` : 'https://api.ouraring.com/v2'
+const GEMINI_PROXY = PROXY_URL ? `${PROXY_URL}/gemini` : ''
 const GARMIN_SERVER  = 'http://localhost:5001/garmin'
-const GARMIN_TIMEOUT = 4000  // ms รอ local server
-
-const SYSTEM_PROMPT = `คุณคือโค้ชสุขภาพส่วนตัวที่เชี่ยวชาญด้านการฟื้นฟูร่างกายและการวิ่ง
-คุณพูดภาษาไทย กระชับ ตรงประเด็น ไม่อ้อมค้อม
-ให้คำแนะนำเชิงรุกตามข้อมูลที่ได้รับ โดยใช้หลัก:
-- HRV และ Readiness Score เป็นตัวชี้วัดหลัก
-- ถ้า Readiness < 60 → แนะนำพักหรือ easy run เท่านั้น
-- นอนน้อยกว่า 6 ชั่วโมง → ห้ามวิ่ง threshold/interval
-- Body Battery < 30 → แนะนำ recovery day
-- รวม travel fatigue เข้าในการประเมินด้วย
-
-ตอบในรูปแบบ JSON เท่านั้น ไม่มีข้อความอื่นนอก JSON:
-{
-  "status": "optimal|good|caution|rest",
-  "summary": "สรุปสภาพร่างกายวันนี้ใน 2 ประโยค",
-  "recommendation": "แนะนำการออกกำลังกายวันนี้",
-  "workout_plan": {
-    "type": "easy_run|tempo|interval|strength|rest|yoga",
-    "duration_min": 0,
-    "intensity": "Z1|Z2|Z3|Z4|Z5|rest",
-    "detail": "รายละเอียดเพิ่มเติม"
-  },
-  "warnings": ["คำเตือนถ้ามี"],
-  "sleep_tip": "คำแนะนำการนอนสำหรับคืนนี้"
-}`
+const GARMIN_TIMEOUT = 4000
 
 // ── State ────────────────────────────────────────────────────────
 let travelLevel = 0
 let ouraData    = null
 let garminData  = null
+let chartView   = '7d'
 
 // ── Storage ──────────────────────────────────────────────────────
-const store  = (k, v)  => localStorage.setItem(k, typeof v === 'object' ? JSON.stringify(v) : v)
-const recall = k => {
-  const v = localStorage.getItem(k)
-  if (!v) return null
-  try { return JSON.parse(v) } catch { return v }
-}
+const store  = (k,v) => localStorage.setItem(k, typeof v==='object' ? JSON.stringify(v) : v)
+const recall = k => { const v=localStorage.getItem(k); if(!v) return null; try{return JSON.parse(v)}catch{return v} }
 
 // ── Date helpers ─────────────────────────────────────────────────
 const todayStr   = () => new Date().toISOString().split('T')[0]
-const daysAgoStr = n => {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return d.toISOString().split('T')[0]
-}
+const daysAgoStr = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().split('T')[0] }
 
 // ── Color system ─────────────────────────────────────────────────
 function zoneColor(type, val) {
-  if (val == null) return '#666'
-  const thresholds = {
+  if (val==null) return '#666'
+  const t = {
     readiness: [[85,'#35f18a'],[70,'#c8f135'],[55,'#ffaa00'],[0,'#ff5c35']],
     sleep:     [[80,'#35f18a'],[65,'#c8f135'],[50,'#ffaa00'],[0,'#ff5c35']],
     hrv:       [[65,'#35f18a'],[45,'#c8f135'],[25,'#ffaa00'],[0,'#ff5c35']],
     battery:   [[75,'#35f18a'],[50,'#c8f135'],[30,'#ffaa00'],[0,'#ff5c35']],
   }
-  const tbl = thresholds[type] || thresholds.readiness
-  for (const [threshold, color] of tbl) {
-    if (val >= threshold) return color
-  }
+  for (const [thresh,color] of (t[type]||t.readiness)) if (val>=thresh) return color
   return '#ff5c35'
-}
-function statusColor(s) {
-  return {optimal:'#35f18a',good:'#c8f135',caution:'#ffaa00',rest:'#ff5c35'}[s] || '#666'
-}
-function statusLabel(s) {
-  return {optimal:'Optimal — พร้อมสูงสุด',good:'Good — พร้อมดี',caution:'Caution — ระวัง',rest:'Rest — พักผ่อน'}[s] || s
-}
-function workoutLabel(t) {
-  return {easy_run:'Easy Run',tempo:'Tempo Run',interval:'Interval Training',
-          strength:'Strength Training',rest:'Rest Day',yoga:'Yoga / Stretch'}[t] || t || '—'
 }
 
 // ── Status bar ───────────────────────────────────────────────────
@@ -1161,302 +771,171 @@ function setStatus(cls, txt) {
 }
 
 // ── Animations ───────────────────────────────────────────────────
-function countUp(el, target, ms = 900) {
-  if (typeof target !== 'number') { el.textContent = target; return }
-  const start = Date.now()
-  const tick = () => {
-    const p = Math.min(1, (Date.now() - start) / ms)
-    const e = 1 - Math.pow(1 - p, 3)
-    el.textContent = Math.round(e * target)
-    if (p < 1) requestAnimationFrame(tick)
+function countUp(el, target, ms=900) {
+  if (typeof target!=='number') { el.textContent=target; return }
+  const start=Date.now()
+  const tick=()=>{
+    const p=Math.min(1,(Date.now()-start)/ms)
+    const e=1-Math.pow(1-p,3)
+    el.textContent=Math.round(e*target)
+    if(p<1) requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
 }
 
-function typewriter(el, text, spd = 28, onDone = null) {
-  let i = 0
-  el.textContent = ''
-  const tick = () => {
-    if (i < text.length) { el.textContent = text.slice(0, ++i); setTimeout(tick, spd) }
-    else if (onDone) onDone()
-  }
-  tick()
-}
-
-function formatMin(seconds) {
+// format seconds → "Xh Ym" or "Ym"
+function formatDur(seconds) {
   if (!seconds) return '—'
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  return h ? `${h}ชม.${m}น.` : `${m}น.`
+  const h = Math.floor(seconds/3600)
+  const m = Math.floor((seconds%3600)/60)
+  if (h>0 && m>0) return `${h}h ${m}m`
+  if (h>0) return `${h}h`
+  return `${m}m`
 }
 
 // ── Setup ────────────────────────────────────────────────────────
 function setupSave() {
-  const oura   = document.getElementById('oura-token').value.trim()
-  const claude = document.getElementById('claude-key').value.trim()
-  const garmin = document.getElementById('garmin-setup').value.trim()
-  const errEl  = document.getElementById('setup-err')
-
-  if (garmin) {
-    try { store(SK.GARMIN, JSON.parse(garmin)) }
-    catch { errEl.textContent = 'Garmin JSON ไม่ถูกต้อง'; errEl.style.display = 'block'; return }
-  }
-  if (oura)   store(SK.OURA, oura)
-  if (claude) store(SK.CLAUDE, claude)
-
+  const oura=document.getElementById('oura-token').value.trim()
+  const claude=document.getElementById('claude-key').value.trim()
+  const garmin=document.getElementById('garmin-setup').value.trim()
+  const errEl=document.getElementById('setup-err')
+  if (garmin) { try{store(SK.GARMIN,JSON.parse(garmin))}catch{errEl.textContent='Garmin JSON ไม่ถูกต้อง';errEl.style.display='block';return} }
+  if (oura)   store(SK.OURA,oura)
+  if (claude) store(SK.CLAUDE,claude)
   closeSettings()
   loadDashboard()
 }
-
 function openSettings() {
-  document.getElementById('settings-overlay').style.display = 'flex'
-  document.getElementById('setup-err').style.display = 'none'
-  document.getElementById('oura-token').value  = recall(SK.OURA)   || ''
-  document.getElementById('claude-key').value  = recall(SK.CLAUDE) || ''
-  const g = recall(SK.GARMIN)
-  if (g) document.getElementById('garmin-setup').value = JSON.stringify(g, null, 2)
+  document.getElementById('settings-overlay').style.display='flex'
+  document.getElementById('setup-err').style.display='none'
+  document.getElementById('oura-token').value=recall(SK.OURA)||''
+  document.getElementById('claude-key').value=recall(SK.CLAUDE)||''
+  const g=recall(SK.GARMIN); if(g) document.getElementById('garmin-setup').value=JSON.stringify(g,null,2)
 }
-
-function closeSettings() {
-  document.getElementById('settings-overlay').style.display = 'none'
-}
+function closeSettings() { document.getElementById('settings-overlay').style.display='none' }
 
 // ── Travel ───────────────────────────────────────────────────────
-function setTravel(level, el) {
-  travelLevel = level
-  document.querySelectorAll('.travel-btn').forEach(b => b.classList.remove('active'))
+function setTravel(level,el) {
+  travelLevel=level
+  document.querySelectorAll('.travel-btn').forEach(b=>b.classList.remove('active'))
   el.classList.add('active')
 }
 
+// ── Tab switching ─────────────────────────────────────────────────
+function switchTab(tab, elClicked) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-tab,.top-tab').forEach(t=>t.classList.remove('active'))
+  document.getElementById('tab-'+tab).classList.add('active')
+  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b=>b.classList.add('active'))
+  if (tab==='nbot') renderUsage()
+  if (tab==='data') setTimeout(()=>renderDataTab(dataPeriod||'7d'),50)
+  // redraw chart on dash tab
+  if (tab==='dash' && ouraData) setTimeout(()=>renderChart(ouraData.history, chartView),50)
+}
+
 // ── Oura API ─────────────────────────────────────────────────────
-async function ouraFetch(path, params = {}) {
-  const url = new URL(OURA_BASE + path)
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  const headers = PROXY_URL ? {} : { Authorization: `Bearer ${recall(SK.OURA)}` }
-  const res = await fetch(url.toString(), { headers })
+async function ouraFetch(path,params={}) {
+  const url=new URL(OURA_BASE+path)
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v))
+  const headers=PROXY_URL?{}:{Authorization:`Bearer ${recall(SK.OURA)}`}
+  const res=await fetch(url.toString(),{headers})
   if (!res.ok) throw new Error(`Oura ${res.status}: Token ไม่ถูกต้อง หรือ API ผิดพลาด`)
   return res.json()
 }
 
 async function fetchOura() {
-  const today = todayStr()
-  const from7 = daysAgoStr(7)
-  const p = { start_date: from7, end_date: today }
-
-  const [dailySleepR, sleepR, readyR, actR] = await Promise.all([
-    ouraFetch('/usercollection/daily_sleep', p),
-    ouraFetch('/usercollection/sleep', p),          // มี HRV, sleep stages, lowest_heart_rate
-    ouraFetch('/usercollection/daily_readiness', p),
-    ouraFetch('/usercollection/daily_activity', p),
+  const today=todayStr(), from7=daysAgoStr(7)
+  const p={start_date:from7,end_date:today}
+  const [dailySleepR,sleepR,readyR,actR] = await Promise.all([
+    ouraFetch('/usercollection/daily_sleep',p),
+    ouraFetch('/usercollection/sleep',p),
+    ouraFetch('/usercollection/daily_readiness',p),
+    ouraFetch('/usercollection/daily_activity',p),
   ])
-
-  const dailySleep = dailySleepR.data?.at(-1) || {}
-  const sleepRaw   = sleepR.data?.at(-1)      || {}
-  const ready      = readyR.data?.at(-1)      || {}
-  const activity   = actR.data?.at(-1)        || {}
-
-  // รวมข้อมูลจาก 2 endpoints: score จาก daily_sleep, stages/HRV จาก sleep
-  const sleep = {
-    ...sleepRaw,
-    score: dailySleep.score,
-  }
-
+  const dailySleep=dailySleepR.data?.at(-1)||{}
+  const sleepRaw  =sleepR.data?.at(-1)||{}
+  const ready     =readyR.data?.at(-1)||{}
+  const activity  =actR.data?.at(-1)||{}
+  const sleep={ ...sleepRaw, score:dailySleep.score }
   return {
     sleep, ready, activity,
-    heartrate: sleepRaw.lowest_heart_rate ?? null,
-    history: {
-      sleep:     dailySleepR.data || [],
-      readiness: readyR.data      || [],
-    },
+    heartrate: sleepRaw.lowest_heart_rate??null,
+    history: { sleep:dailySleepR.data||[], readiness:readyR.data||[], sleepRaws:sleepR.data||[] },
   }
-}
-
-// ── Claude API ───────────────────────────────────────────────────
-function buildPrompt(oura, garmin, travel) {
-  const TRAVEL = ['น้อย (work from home)', 'ปานกลาง', 'เยอะมาก (เดินทางทั้งวัน)']
-  const { sleep, ready, activity } = oura
-  const totalMin = Math.round((sleep.total_sleep_duration || 0) / 60)
-  const deepMin  = Math.round((sleep.deep_sleep_duration  || 0) / 60)
-  const remMin   = Math.round((sleep.rem_sleep_duration   || 0) / 60)
-
-  return `ข้อมูลสุขภาพวันนี้ (${new Date().toLocaleDateString('th-TH', {dateStyle:'long'})}):
-
-OURA RING:
-- Readiness Score: ${ready.score ?? 'ไม่มีข้อมูล'}/100
-- Sleep Score: ${sleep.score ?? 'ไม่มีข้อมูล'}/100
-- Total Sleep: ${totalMin} นาที (${(totalMin/60).toFixed(1)} ชม.)
-- Deep Sleep: ${deepMin} นาที
-- REM Sleep: ${remMin} นาที
-- HRV Average: ${ready.hrv_balance ?? 'ไม่มีข้อมูล'} ms
-- Resting HR: ${oura.heartrate ?? 'ไม่มีข้อมูล'} bpm
-- Recovery Index: ${ready.recovery_index ?? 'ไม่มีข้อมูล'}
-
-GARMIN (ถ้ามี):
-- Body Battery: ${garmin?.body_battery ?? 'ไม่มีข้อมูล'}
-- Steps วันนี้: ${garmin?.steps ?? activity.steps ?? 'ไม่มีข้อมูล'}
-- กิจกรรมล่าสุด: ${garmin?.last_activity?.type ?? 'ไม่มีข้อมูล'}
-
-การเดินทางวันนี้: ${TRAVEL[travel]}
-
-วิเคราะห์และแนะนำ:`
-}
-
-async function askClaude(prompt) {
-  const body = JSON.stringify({
-    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
-  })
-
-  let endpoint
-  if (GEMINI_PROXY) {
-    endpoint = GEMINI_PROXY                      // Worker proxy (key อยู่ใน Worker)
-  } else {
-    const GEMINI_MODEL = 'gemini-2.0-flash'
-    endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${recall(SK.CLAUDE)}`
-  }
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(`Gemini API ${res.status}: ${err.error?.message || 'ผิดพลาด'}`)
-  }
-  const data = await res.json()
-  // Gemini 2.5 Pro (thinking model) อาจส่งหลาย parts — หา JSON จากทุก part
-  const parts = data.candidates?.[0]?.content?.parts || []
-  const allText = parts.map(p => p.text || '').join('')
-  if (!allText) throw new Error('Gemini ไม่ส่งข้อความกลับ')
-  const match = allText.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Gemini ตอบไม่ตรง format JSON')
-  return JSON.parse(match[0])
 }
 
 // ── Render: Vital Strip ──────────────────────────────────────────
 function renderVitals(oura, garmin) {
-  const { sleep, ready, heartrate } = oura
-  const battery = garmin?.body_battery ?? null
-  const hrv     = oura.sleep?.average_hrv ?? null
-
-  const cards = [
-    { label: 'Readiness',     val: ready.score,   sub: 'ความพร้อมร่างกาย',   type: 'readiness' },
-    { label: 'Sleep',         val: sleep.score,   sub: formatMin(sleep.total_sleep_duration), type: 'sleep' },
-    { label: 'HRV',           val: hrv ? Math.round(hrv) : null, sub: 'HRV avg', type: 'hrv' },
-    { label: 'Body Battery',  val: battery,       sub: battery == null ? 'ไม่มีข้อมูล' : battery >= 50 ? 'พร้อม' : 'ต่ำ', type: 'battery' },
+  const {sleep,ready,heartrate}=oura
+  const battery=garmin?.body_battery??null
+  const hrv=oura.sleep?.average_hrv??null
+  const cards=[
+    {label:'Readiness',  val:ready.score,                        sub:'ความพร้อมร่างกาย',  type:'readiness'},
+    {label:'Sleep',      val:sleep.score,                        sub:formatDur(sleep.total_sleep_duration), type:'sleep'},
+    {label:'HRV',        val:hrv?Math.round(hrv):null,           sub:'HRV avg (ms)',      type:'hrv'},
+    {label:'Body Battery',val:battery,                           sub:battery==null?'ไม่มีข้อมูล':battery>=50?'พร้อม':'ต่ำ', type:'battery'},
   ]
-
-  document.getElementById('vital-strip').innerHTML = cards.map((c, i) => {
-    const color = zoneColor(c.type, c.val)
-    const display = c.val ?? '—'
-    return `
-      <div class="vital-card" style="animation-delay:${i*0.08}s">
-        <div class="vital-label">${c.label}</div>
-        <div class="vital-score" id="vs${i}" style="color:${color}">${typeof display === 'number' ? 0 : display}</div>
-        <div class="vital-sub">${c.sub}</div>
-        <div class="vital-bar">
-          <div class="vital-bar-fill" id="vb${i}" style="background:${color};width:0%"></div>
-        </div>
-      </div>`
+  document.getElementById('vital-strip').innerHTML=cards.map((c,i)=>{
+    const color=zoneColor(c.type,c.val)
+    const display=c.val??'—'
+    return `<div class="vital-card" style="animation-delay:${i*.08}s">
+      <div class="vital-label">${c.label}</div>
+      <div class="vital-score" id="vs${i}" style="color:${color}">${typeof display==='number'?0:display}</div>
+      <div class="vital-sub">${c.sub}</div>
+      <div class="vital-bar"><div class="vital-bar-fill" id="vb${i}" style="background:${color};width:0%"></div></div>
+    </div>`
   }).join('')
-
-  cards.forEach((c, i) => {
-    if (typeof c.val === 'number') {
-      countUp(document.getElementById(`vs${i}`), c.val)
-      setTimeout(() => {
-        document.getElementById(`vb${i}`).style.width = `${Math.min(100, c.val)}%`
-      }, 50)
+  cards.forEach((c,i)=>{
+    if (typeof c.val==='number') {
+      countUp(document.getElementById(`vs${i}`),c.val)
+      setTimeout(()=>{ document.getElementById(`vb${i}`).style.width=`${Math.min(100,c.val)}%` },50)
     }
   })
 }
 
-// ── Render: AI Coach ─────────────────────────────────────────────
-function renderAI(coaching) {
-  const c     = statusColor(coaching.status)
-  const plan  = coaching.workout_plan || {}
-  const warns = (coaching.warnings || []).filter(Boolean)
-
-  const html = `
-    <div class="section-title">AI COACH</div>
-    <div>
-      <div class="status-badge" style="background:${c}18;border:1px solid ${c}44;color:${c}">
-        <div class="badge-dot" style="background:${c}"></div>
-        ${statusLabel(coaching.status)}
-      </div>
-      <div class="coach-summary cursor" id="coach-txt"></div>
-    </div>
-    <div class="workout-card">
-      <div class="mcard-label">แนะนำวันนี้</div>
-      <div class="workout-title" style="color:${c}">${workoutLabel(plan.type)}</div>
-      <div class="tags">
-        ${plan.duration_min ? `<div class="tag">⏱ ${plan.duration_min} นาที</div>` : ''}
-        ${plan.intensity    ? `<div class="tag">💪 ${plan.intensity}</div>` : ''}
-      </div>
-      <div class="workout-detail">${plan.detail || ''}</div>
-    </div>
-    ${warns.length ? `<div class="warnings">${warns.map(w => `<div class="warn-item">⚠ ${w}</div>`).join('')}</div>` : ''}
-    ${coaching.sleep_tip ? `<div class="sleep-tip"><strong>🌙 คืนนี้:</strong> ${coaching.sleep_tip}</div>` : ''}
-  `
-  document.getElementById('ai-col').innerHTML = html
-
-  const summaryEl = document.getElementById('coach-txt')
-  typewriter(summaryEl, coaching.summary || '', 28, () => summaryEl.classList.remove('cursor'))
-}
-
-// ── Render: Sleep Stages ─────────────────────────────────────────
+// ── Render: Sleep (full-width, horizontal bars) ──────────────────
 function renderSleep(sleep) {
-  const total = Math.max(sleep.total_sleep_duration || 1, 1)
-  const stages = [
-    { label:'Deep',  val: sleep.deep_sleep_duration  || 0, color:'#6366f1' },
-    { label:'REM',   val: sleep.rem_sleep_duration   || 0, color:'#a78bfa' },
-    { label:'Light', val: sleep.light_sleep_duration || 0, color:'#38bdf8' },
-    { label:'Awake', val: sleep.awake_time           || 0, color:'#444' },
+  const total=Math.max(sleep.total_sleep_duration||1,1)
+  const stages=[
+    {label:'Deep',  val:sleep.deep_sleep_duration ||0, color:'#6366f1'},
+    {label:'REM',   val:sleep.rem_sleep_duration  ||0, color:'#a78bfa'},
+    {label:'Light', val:sleep.light_sleep_duration||0, color:'#38bdf8'},
+    {label:'Awake', val:sleep.awake_time          ||0, color:'#444'},
   ]
+  let bedStr='—', wakeStr='—'
+  if (sleep.bedtime_start) bedStr=new Date(sleep.bedtime_start).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false})
+  if (sleep.bedtime_end)   wakeStr=new Date(sleep.bedtime_end).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false})
+  const totalHrs=(sleep.total_sleep_duration||0)/3600
+  const hrsH=Math.floor(totalHrs), hrsM=Math.round((totalHrs-hrsH)*60)
+  const hrsDisplay=totalHrs>0?(hrsM>0?`${hrsH}h ${hrsM}m`:`${hrsH}h`):'—'
+  const sleepColor=zoneColor('sleep',sleep.score)
 
-  // Parse bedtime and wake time
-  let bedStr = '—', wakeStr = '—'
-  if (sleep.bedtime_start) {
-    const bd = new Date(sleep.bedtime_start)
-    bedStr = bd.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', hour12: false })
-  }
-  if (sleep.bedtime_end) {
-    const we = new Date(sleep.bedtime_end)
-    wakeStr = we.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit', hour12: false })
-  }
-
-  const totalHrs = (sleep.total_sleep_duration || 0) / 3600
-  const hrsDisplay = totalHrs > 0 ? totalHrs.toFixed(1) : '—'
-  const sleepColor = zoneColor('sleep', sleep.score)
-
-  const el = document.getElementById('sleep-stages')
-  el.innerHTML = `
-    <div class="sleep-time-row">
+  document.getElementById('sleep-stages').innerHTML=`
+    <div class="sleep-header">
       <div class="sleep-time-block">
         <div class="sleep-time-label">นอน</div>
         <div class="sleep-time-value">${bedStr}</div>
       </div>
-      <div class="sleep-time-arrow">→</div>
+      <div class="sleep-arrow">→</div>
       <div class="sleep-time-block">
         <div class="sleep-time-label">ตื่น</div>
         <div class="sleep-time-value">${wakeStr}</div>
       </div>
-      <div style="margin-left:auto;text-align:right">
+      <div class="sleep-total-block">
         <div class="sleep-hours-big" style="color:${sleepColor}">${hrsDisplay}</div>
-        <div class="sleep-hours-unit">ชั่วโมง</div>
+        <div class="sleep-hours-unit">รวมทั้งหมด</div>
       </div>
     </div>
-    <div style="display:flex;gap:0.75rem;margin-top:0.25rem">
-      ${stages.map(s => {
-        const m = Math.round(s.val / 60)
-        const pct = Math.min(100, (s.val / total) * 100)
-        return `<div style="flex:1;text-align:center">
-          <div style="height:40px;background:var(--bg2);border-radius:4px;overflow:hidden;display:flex;align-items:flex-end">
-            <div style="width:100%;height:${pct}%;background:${s.color};transition:height .6s ease;border-radius:4px 4px 0 0"></div>
+    <div style="margin-top:.25rem">
+      ${stages.map(s=>{
+        const pct=Math.min(100,(s.val/total)*100)
+        const dur=formatDur(s.val)
+        return `<div class="stage-row">
+          <div class="stage-name">${s.label}</div>
+          <div class="stage-bar-wrap">
+            <div class="stage-bar-fill" style="width:${pct}%;background:${s.color}"></div>
           </div>
-          <div style="font-size:.75rem;margin-top:.25rem;color:var(--text)">${m}<small style="color:var(--muted);font-size:.65em">m</small></div>
-          <div style="font-size:.65rem;color:var(--muted)">${s.label}</div>
+          <div class="stage-dur">${dur}</div>
         </div>`
       }).join('')}
     </div>
@@ -1465,15 +944,15 @@ function renderSleep(sleep) {
 
 // ── Render: Activity ─────────────────────────────────────────────
 function renderActivity(oura, garmin) {
-  const { activity, heartrate } = oura
-  const items = [
-    { label:'Steps',       val: (garmin?.steps || activity.steps || 0).toLocaleString(), unit:'', sub:'ก้าววันนี้' },
-    { label:'Active Cal',  val: activity.active_calories || '—', unit:'kcal', sub:'แคลอรี่ที่เผา' },
-    { label:'Resting HR',  val: heartrate || '—', unit:'bpm', sub:'min HR วันนี้' },
-    { label:'Activity',    val: activity.score || '—', unit:'', sub:'Activity Score' },
+  const {activity,heartrate}=oura
+  const items=[
+    {label:'Steps',      val:(garmin?.steps||activity.steps||0).toLocaleString(), unit:'',     sub:'ก้าววันนี้'},
+    {label:'Active Cal', val:activity.active_calories||'—',                       unit:'kcal', sub:'แคลอรี่ที่เผา'},
+    {label:'Resting HR', val:heartrate||'—',                                      unit:'bpm',  sub:'min HR คืนนี้'},
+    {label:'Activity',   val:activity.score||'—',                                 unit:'',     sub:'Activity Score'},
   ]
-  document.getElementById('activity-metrics').innerHTML = items.map((m, i) => `
-    <div class="mcard" style="animation-delay:${i*0.07}s">
+  document.getElementById('activity-metrics').innerHTML=items.map((m,i)=>`
+    <div class="mcard" style="animation-delay:${i*.07}s">
       <div class="mcard-label">${m.label}</div>
       <div class="mcard-value">${m.val}<span class="mcard-unit">${m.unit}</span></div>
       <div class="mcard-sub">${m.sub}</div>
@@ -1482,715 +961,629 @@ function renderActivity(oura, garmin) {
 
 // ── Render: Garmin ───────────────────────────────────────────────
 function renderGarmin(g) {
-  const el = document.getElementById('garmin-display')
-  if (!g) { el.innerHTML = '<div class="mcard-label">ไม่มีข้อมูล Garmin</div>'; return }
-
-  const act = g.last_activity || {}
-  el.innerHTML = `
-    <div class="metric-row" style="margin-bottom:0.75rem">
-      <div class="mcard" style="padding:.875rem">
+  const el=document.getElementById('garmin-display')
+  if (!g) { el.innerHTML='<div class="mcard-label">ไม่มีข้อมูล Garmin</div>'; return }
+  const act=g.last_activity||{}
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.75rem">
+      <div class="mcard" style="padding:.75rem">
         <div class="mcard-label">Body Battery</div>
-        <div class="mcard-value" style="color:${zoneColor('battery', g.body_battery)}">${g.body_battery ?? '—'}</div>
+        <div class="mcard-value" style="color:${zoneColor('battery',g.body_battery)}">${g.body_battery??'—'}</div>
       </div>
-      <div class="mcard" style="padding:.875rem">
+      <div class="mcard" style="padding:.75rem">
         <div class="mcard-label">HRV Last Night</div>
-        <div class="mcard-value">${g.hrv_last_night ?? '—'}<span class="mcard-unit">ms</span></div>
+        <div class="mcard-value">${g.hrv_last_night??'—'}<span class="mcard-unit">ms</span></div>
       </div>
     </div>
-    ${act.type ? `
-    <div class="mcard" style="padding:.875rem">
+    ${act.type?`<div class="mcard" style="padding:.75rem">
       <div class="mcard-label">กิจกรรมล่าสุด</div>
-      <div style="font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:1px;color:var(--accent)">${act.type}</div>
-      <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">
-        ${act.distance_km ? `📍 ${act.distance_km} km` : ''}
-        ${act.duration_min ? ` · ⏱ ${act.duration_min} นาที` : ''}
-        ${act.avg_hr       ? ` · ❤️ ${act.avg_hr} bpm` : ''}
+      <div style="font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:1px;color:var(--accent)">${act.type}</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">
+        ${act.distance_km?`📍 ${act.distance_km} km`:''}
+        ${act.duration_min?` · ⏱ ${act.duration_min} นาที`:''}
+        ${act.avg_hr?` · ❤️ ${act.avg_hr} bpm`:''}
       </div>
-    </div>` : ''}
+    </div>`:''}
   `
 }
 
 function loadGarmin() {
-  const raw = document.getElementById('garmin-paste').value.trim()
+  const raw=document.getElementById('garmin-paste').value.trim()
   if (!raw) return
   try {
-    garminData = JSON.parse(raw)
-    store(SK.GARMIN, garminData)
+    garminData=JSON.parse(raw); store(SK.GARMIN,garminData)
     renderGarmin(garminData)
-    if (ouraData) renderActivity(ouraData, garminData)
-    document.getElementById('garmin-paste').value = ''
-    setGarminBadge(false, 'manual')
-    alert('โหลด Garmin สำเร็จ — กด Refresh เพื่ออัพเดต AI Coach')
-  } catch {
-    alert('JSON ไม่ถูกต้อง')
-  }
+    if (ouraData) renderActivity(ouraData,garminData)
+    document.getElementById('garmin-paste').value=''
+    setGarminBadge(false,'manual')
+    alert('โหลด Garmin สำเร็จ')
+  } catch { alert('JSON ไม่ถูกต้อง') }
 }
 
 async function retryGarminServer() {
-  const badge = document.getElementById('garmin-server-badge')
-  badge.textContent = '⏳ กำลังเชื่อมต่อ...'
-  const data = await fetchGarminAuto()
-  if (data) {
-    garminData = data
-    renderGarmin(garminData)
-    if (ouraData) renderActivity(ouraData, garminData)
-    setGarminBadge(true)
-  } else {
-    setGarminBadge(false)
-  }
+  const badge=document.getElementById('garmin-server-badge')
+  badge.textContent='⏳ กำลังเชื่อมต่อ...'
+  const data=await fetchGarminAuto()
+  if (data) { garminData=data; renderGarmin(garminData); if(ouraData) renderActivity(ouraData,garminData); setGarminBadge(true) }
+  else setGarminBadge(false)
 }
 
-function setGarminBadge(online, mode = null) {
-  const badge = document.getElementById('garmin-server-badge')
+function setGarminBadge(online,mode=null) {
+  const badge=document.getElementById('garmin-server-badge')
   if (!badge) return
-  if (mode === 'manual') {
-    badge.style.color = 'var(--caution)'
-    badge.textContent = '📋 Manual paste'
-  } else if (online) {
-    badge.style.color = 'var(--optimal)'
-    badge.textContent = '🟢 Auto (localhost:5001)'
-  } else {
-    badge.style.color = 'var(--muted)'
-    badge.textContent = '⚫ Server ไม่รัน'
-  }
+  if (mode==='manual') { badge.style.color='var(--caution)'; badge.textContent='📋 Manual' }
+  else if (online)     { badge.style.color='var(--optimal)'; badge.textContent='🟢 Auto (localhost)' }
+  else                 { badge.style.color='var(--muted)';   badge.textContent='⚫ Server ไม่รัน' }
 }
 
 // ── Commute ───────────────────────────────────────────────────────
-const SK_COMMUTE = 'hd_commute'
-
+const SK_COMMUTE='hd_commute'
 function loadCommuteDisplay() {
-  const today  = todayStr()
-  const stored = recall(SK_COMMUTE) || {}
-  const rec    = stored[today] || {}
-
-  document.getElementById('c-leave-home').textContent  = rec.leave_home  || '—'
-  document.getElementById('c-arrive-work').textContent = rec.arrive_work || '—'
-  document.getElementById('c-leave-work').textContent  = rec.leave_work  || '—'
-  document.getElementById('c-arrive-home').textContent = rec.arrive_home || '—'
-
-  const badge = document.getElementById('commute-badge')
+  const today=todayStr(), stored=recall(SK_COMMUTE)||{}, rec=stored[today]||{}
+  document.getElementById('c-leave-home').textContent =rec.leave_home ||'—'
+  document.getElementById('c-arrive-work').textContent=rec.arrive_work||'—'
+  document.getElementById('c-leave-work').textContent =rec.leave_work ||'—'
+  document.getElementById('c-arrive-home').textContent=rec.arrive_home||'—'
+  const badge=document.getElementById('commute-badge')
   if (rec.leave_home) {
-    badge.style.color = 'var(--optimal)'
-    badge.textContent = '✓ มีข้อมูล'
-    if (rec.commute_min) {
-      document.getElementById('commute-min-display').textContent =
-        `⏱ เดินทาง ${rec.commute_min} นาที`
-    }
-  } else {
-    badge.textContent = 'ยังไม่มีข้อมูล'
-  }
-
-  // pre-fill inputs
-  if (rec.leave_home)  document.getElementById('ci-leave-home').value  = rec.leave_home
-  if (rec.arrive_work) document.getElementById('ci-arrive-work').value = rec.arrive_work
-  if (rec.leave_work)  document.getElementById('ci-leave-work').value  = rec.leave_work
-  if (rec.arrive_home) document.getElementById('ci-arrive-home').value = rec.arrive_home
+    badge.style.color='var(--optimal)'; badge.textContent='✓ มีข้อมูล'
+    if (rec.commute_min) document.getElementById('commute-min-display').textContent=`⏱ เดินทาง ${rec.commute_min} นาที`
+  } else badge.textContent='ยังไม่มีข้อมูล'
+  if (rec.leave_home)  document.getElementById('ci-leave-home').value =rec.leave_home
+  if (rec.arrive_work) document.getElementById('ci-arrive-work').value=rec.arrive_work
+  if (rec.leave_work)  document.getElementById('ci-leave-work').value =rec.leave_work
+  if (rec.arrive_home) document.getElementById('ci-arrive-home').value=rec.arrive_home
 }
-
 function saveCommute() {
-  const today = todayStr()
-  const lh = document.getElementById('ci-leave-home').value
-  const aw = document.getElementById('ci-arrive-work').value
-  const lw = document.getElementById('ci-leave-work').value
-  const ah = document.getElementById('ci-arrive-home').value
-
-  let commuteMin = null
-  if (lh && aw) {
-    const [lhH, lhM] = lh.split(':').map(Number)
-    const [awH, awM] = aw.split(':').map(Number)
-    commuteMin = (awH * 60 + awM) - (lhH * 60 + lhM)
+  const today=todayStr()
+  const lh=document.getElementById('ci-leave-home').value
+  const aw=document.getElementById('ci-arrive-work').value
+  const lw=document.getElementById('ci-leave-work').value
+  const ah=document.getElementById('ci-arrive-home').value
+  let commuteMin=null
+  if (lh&&aw) {
+    const [lhH,lhM]=lh.split(':').map(Number)
+    const [awH,awM]=aw.split(':').map(Number)
+    commuteMin=(awH*60+awM)-(lhH*60+lhM)
   }
-
-  const stored = recall(SK_COMMUTE) || {}
-  stored[today] = { leave_home: lh, arrive_work: aw, leave_work: lw, arrive_home: ah, commute_min: commuteMin }
-  store(SK_COMMUTE, stored)
+  const stored=recall(SK_COMMUTE)||{}
+  stored[today]={leave_home:lh,arrive_work:aw,leave_work:lw,arrive_home:ah,commute_min:commuteMin}
+  store(SK_COMMUTE,stored)
   loadCommuteDisplay()
 }
 
-// ── Render: 7-Day Trend Chart ────────────────────────────────────
-function renderChart(history) {
-  const canvas = document.getElementById('trend-chart')
-  const dpr    = window.devicePixelRatio || 1
-  const W      = canvas.parentElement.clientWidth - 40  // account for padding
-  const H      = 90
+// ── Trend Chart with axis labels ─────────────────────────────────
+function renderChart(history, view='7d') {
+  const canvas=document.getElementById('trend-chart')
+  if (!canvas) return
+  const dpr=window.devicePixelRatio||1
+  const W=canvas.parentElement.clientWidth-40
+  const H=160
+  canvas.width=W*dpr; canvas.height=H*dpr
+  canvas.style.width=W+'px'; canvas.style.height=H+'px'
+  const ctx=canvas.getContext('2d')
+  ctx.scale(dpr,dpr)
 
-  canvas.width  = W * dpr
-  canvas.height = H * dpr
-  canvas.style.width  = W + 'px'
-  canvas.style.height = H + 'px'
+  // padding: left for Y labels, bottom for X labels
+  const pad={t:10,b:28,l:36,r:12}
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b
 
-  const ctx = canvas.getContext('2d')
-  ctx.scale(dpr, dpr)
+  // Background
+  ctx.fillStyle='transparent'
 
-  const pad = { t: 8, b: 8, l: 8, r: 8 }
-  const cW  = W - pad.l - pad.r
-  const cH  = H - pad.t - pad.b
-
-  // Grid
-  ctx.strokeStyle = '#2a2a2a'
-  ctx.lineWidth   = 1
-  ;[25, 50, 75].forEach(v => {
-    const y = pad.t + cH - (v / 100) * cH
-    ctx.beginPath()
-    ctx.moveTo(pad.l, y)
-    ctx.lineTo(W - pad.r, y)
-    ctx.stroke()
+  // Y axis labels + grid
+  ctx.font=`${10*dpr/dpr}px Space Mono, monospace`
+  ctx.textAlign='right'
+  ;[0,25,50,75,100].forEach(v=>{
+    const y=pad.t+cH-(v/100)*cH
+    ctx.strokeStyle='#222'; ctx.lineWidth=1
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke()
+    ctx.fillStyle='#555'; ctx.fillText(v,pad.l-5,y+4)
   })
 
-  const drawSeries = (data, color) => {
+  // determine data based on view
+  let readData = (history.readiness||[]).slice(-7)
+  let sleepData= (history.sleep||[]).slice(-7)
+  let hrvData  = (history.sleepRaws||[]).slice(-7)
+  if (view==='30d') {
+    readData = (history.readiness||[]).slice(-30)
+    sleepData= (history.sleep||[]).slice(-30)
+    hrvData  = (history.sleepRaws||[]).slice(-30)
+  } else if (view==='1y') {
+    readData = history.readiness||[]
+    sleepData= history.sleep||[]
+    hrvData  = history.sleepRaws||[]
+  }
+
+  const n=Math.max(readData.length,sleepData.length,1)
+
+  // X axis labels
+  ctx.fillStyle='#555'; ctx.textAlign='center'
+  const xStep=Math.ceil(n/6)
+  readData.forEach((d,i)=>{
+    if (i%xStep!==0 && i!==n-1) return
+    const x=pad.l+(i/Math.max(n-1,1))*cW
+    const date=d.day?new Date(d.day):null
+    if (date) {
+      const label=view==='1y'
+        ? date.toLocaleDateString('th-TH',{month:'short'})
+        : `${date.getDate()}/${date.getMonth()+1}`
+      ctx.fillText(label,x,H-6)
+    }
+  })
+
+  // Draw series
+  const drawLine=(data,color,yFn)=>{
     if (!data?.length) return
-    ctx.beginPath()
-    ctx.strokeStyle = color
-    ctx.lineWidth   = 2
-    ctx.lineJoin    = 'round'
-    ctx.lineCap     = 'round'
-    data.forEach((d, i) => {
-      const x = pad.l + (i / Math.max(data.length - 1, 1)) * cW
-      const y = pad.t + cH - (Math.min(100, Math.max(0, d.score ?? d)) / 100) * cH
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2
+    ctx.lineJoin='round'; ctx.lineCap='round'
+    data.forEach((d,i)=>{
+      const x=pad.l+(i/Math.max(data.length-1,1))*cW
+      const y=pad.t+cH-yFn(d)/100*cH
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)
     })
     ctx.stroke()
-    ctx.fillStyle = color
-    data.forEach((d, i) => {
-      const x = pad.l + (i / Math.max(data.length - 1, 1)) * cW
-      const y = pad.t + cH - (Math.min(100, Math.max(0, d.score ?? d)) / 100) * cH
-      ctx.beginPath()
-      ctx.arc(x, y, 3, 0, Math.PI * 2)
-      ctx.fill()
+    ctx.fillStyle=color
+    data.forEach((d,i)=>{
+      const x=pad.l+(i/Math.max(data.length-1,1))*cW
+      const y=pad.t+cH-yFn(d)/100*cH
+      ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill()
     })
   }
 
-  const readLast7 = (history.readiness || []).slice(-7)
-  const sleepLast7= (history.sleep     || []).slice(-7)
-  drawSeries(readLast7, '#35f18a')
-  drawSeries(sleepLast7,'#c8f135')
+  drawLine(readData,'#35f18a', d=>Math.min(100,Math.max(0,d.score??0)))
+  drawLine(sleepData,'#c8f135',d=>Math.min(100,Math.max(0,d.score??0)))
+  drawLine(hrvData,  '#38bdf8',d=>Math.min(100,Math.max(0,d.average_hrv??0)))
+}
+
+async function setChartView(view, el) {
+  chartView=view
+  document.querySelectorAll('.chart-view-tab').forEach(t=>t.classList.remove('active'))
+  el.classList.add('active')
+  if (!ouraData) return
+
+  if (view==='7d') {
+    renderChart(ouraData.history,'7d')
+    return
+  }
+
+  // fetch more data for 30d / 1y
+  const days=view==='30d'?30:365
+  try {
+    const p={start_date:daysAgoStr(days),end_date:todayStr()}
+    const [dailySleepR,sleepR,readyR]=await Promise.all([
+      ouraFetch('/usercollection/daily_sleep',p),
+      ouraFetch('/usercollection/sleep',p),
+      ouraFetch('/usercollection/daily_readiness',p),
+    ])
+    const extHistory={
+      readiness: readyR.data||[],
+      sleep:     dailySleepR.data||[],
+      sleepRaws: sleepR.data||[],
+    }
+    renderChart(extHistory,view)
+  } catch(e) {
+    console.error(e)
+  }
+}
+
+// ── Garmin auto-fetch ─────────────────────────────────────────────
+async function fetchGarminAuto() {
+  const ctrl=new AbortController()
+  const tid=setTimeout(()=>ctrl.abort(),GARMIN_TIMEOUT)
+  try {
+    const res=await fetch(GARMIN_SERVER,{signal:ctrl.signal})
+    clearTimeout(tid)
+    if(!res.ok) return null
+    const data=await res.json()
+    if(data.error) return null
+    store(SK.GARMIN,data); return data
+  } catch { clearTimeout(tid); return null }
 }
 
 // ── History ──────────────────────────────────────────────────────
-function saveHistory(oura, garmin, coaching) {
-  const hist  = recall(SK.HIST) || []
-  const today = todayStr()
-  const entry = {
-    date:           today,
-    readiness:      oura.ready.score,
-    sleep_score:    oura.sleep.score,
-    hrv:            oura.ready.hrv_balance,
-    body_battery:   garmin?.body_battery ?? null,
-    ai_status:      coaching?.status ?? null,
-    ai_recommendation: coaching?.recommendation ?? null,
-  }
-  const updated = [...hist.filter(h => h.date !== today), entry]
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-7)
-  store(SK.HIST, updated)
-}
-
-// ── Garmin auto-fetch from local server ──────────────────────────
-async function fetchGarminAuto() {
-  const ctrl = new AbortController()
-  const tid  = setTimeout(() => ctrl.abort(), GARMIN_TIMEOUT)
-  try {
-    const res = await fetch(GARMIN_SERVER, { signal: ctrl.signal })
-    clearTimeout(tid)
-    if (!res.ok) return null
-    const data = await res.json()
-    if (data.error) return null
-    store(SK.GARMIN, data)  // cache ไว้ใน localStorage
-    return data
-  } catch {
-    clearTimeout(tid)
-    return null
-  }
+function saveHistory(oura,garmin) {
+  const hist=recall(SK.HIST)||[]
+  const today=todayStr()
+  const entry={date:today,readiness:oura.ready.score,sleep_score:oura.sleep.score,hrv:oura.sleep?.average_hrv,body_battery:garmin?.body_battery??null}
+  const updated=[...hist.filter(h=>h.date!==today),entry].sort((a,b)=>a.date.localeCompare(b.date)).slice(-7)
+  store(SK.HIST,updated)
 }
 
 // ── Main load ────────────────────────────────────────────────────
 async function loadDashboard() {
-  document.getElementById('hdr-date').textContent =
-    new Date().toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+  document.getElementById('hdr-date').textContent=
+    new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
+  setStatus('load','กำลังโหลด...')
 
-  setStatus('load', 'กำลังโหลด...')
+  const garminAuto=await fetchGarminAuto()
+  if (garminAuto) { garminData=garminAuto; setGarminBadge(true) }
+  else { garminData=recall(SK.GARMIN)||null; setGarminBadge(false,garminData?'manual':null) }
 
-  // ── Garmin: ลอง local server ก่อน → fallback localStorage ──
-  const garminAuto = await fetchGarminAuto()
-  if (garminAuto) {
-    garminData = garminAuto
-    setGarminBadge(true)
-  } else {
-    garminData = recall(SK.GARMIN) || null
-    setGarminBadge(false, garminData ? 'manual' : null)
-  }
-
-  setStatus('load', 'กำลังโหลด Oura...')
-
-  // ── Oura ──
-  let fetchFailed = false
+  setStatus('load','กำลังโหลด Oura...')
   try {
-    ouraData = await fetchOura()
-    setStatus('live', 'Oura ✓')
-  } catch (err) {
-    fetchFailed = true
+    ouraData=await fetchOura()
+    setStatus('live','Oura ✓')
+  } catch(err) {
     console.error(err)
-    const hist = recall(SK.HIST)
-    setStatus('err', 'Oura ผิดพลาด')
-
-    if (hist?.length) {
-      // Show error but continue with last known data from history
-      document.getElementById('vital-strip').innerHTML = `
-        <div class="vital-card" style="grid-column:1/-1">
-          <div class="err-card">⚠ Oura API ผิดพลาด: ${err.message}<br><small>กรุณาตรวจสอบ Token หรือเชื่อมต่ออินเทอร์เน็ต</small></div>
-        </div>`
-    } else {
-      document.getElementById('vital-strip').innerHTML = `
-        <div class="vital-card" style="grid-column:1/-1">
-          <div class="err-card">Token ไม่ถูกต้อง หรือ Oura ไม่ตอบสนอง<br>
-          กรุณาตรวจสอบ Token ใน <strong>Oura App → Profile → Personal Access Token</strong></div>
-        </div>`
-      document.getElementById('ai-col').innerHTML = `
-        <div class="section-title">AI COACH</div>
-        <div class="err-card">ไม่สามารถโหลด AI Coach ได้ เนื่องจากไม่มีข้อมูล Oura</div>`
-      return
-    }
+    setStatus('err','Oura ผิดพลาด')
+    document.getElementById('vital-strip').innerHTML=`
+      <div class="vital-card" style="grid-column:1/-1">
+        <div class="err-card">⚠ ${err.message}<br><small>ตรวจสอบ Token ใน Oura App → Profile → Personal Access Token</small></div>
+      </div>`
+    return
   }
 
-  if (!fetchFailed) {
-    renderVitals(ouraData, garminData)
-    renderSleep(ouraData.sleep)
-    renderActivity(ouraData, garminData)
-    renderGarmin(garminData)
-    loadCommuteDisplay()
-    setTimeout(() => renderChart(ouraData.history), 120)
-  }
+  renderVitals(ouraData,garminData)
+  renderSleep(ouraData.sleep)
+  renderActivity(ouraData,garminData)
+  renderGarmin(garminData)
+  loadCommuteDisplay()
+  setTimeout(()=>renderChart(ouraData.history,chartView),120)
 
-  if (ouraData) saveHistory(ouraData, garminData, null)
-  periodCache = {}  // clear cache เมื่อ refresh
-  dataCache = {}
+  saveHistory(ouraData,garminData)
+  periodCache={}; dataCache={}
   renderChips('1d')
-  // Auto-load data tab on desktop
-  if (window.innerWidth >= 769) {
-    setTimeout(() => renderDataTab('7d'), 200)
-  }
-  setStatus('live', 'พร้อม')
-  document.getElementById('footer-sync').textContent =
-    `Sync ล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`
+  renderUsage()
+
+  setStatus('live','พร้อม')
+  document.getElementById('footer-sync').textContent=`Sync ล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`
+}
+
+// ── N-BOT Usage tracking ──────────────────────────────────────────
+const SK_USAGE='hd_nbot_usage'
+
+function trackUsage(thb) {
+  const today=todayStr()
+  const u=JSON.parse(localStorage.getItem(SK_USAGE)||'{}')
+  if (u.today_date!==today) { u.today_date=today; u.today_requests=0; u.today_thb=0 }
+  u.today_requests=(u.today_requests||0)+1
+  u.today_thb=parseFloat(((u.today_thb||0)+thb).toFixed(6))
+  u.total_requests=(u.total_requests||0)+1
+  u.total_thb=parseFloat(((u.total_thb||0)+thb).toFixed(6))
+  localStorage.setItem(SK_USAGE,JSON.stringify(u))
+  renderUsage()
+}
+
+function renderUsage() {
+  const today=todayStr()
+  const u=JSON.parse(localStorage.getItem(SK_USAGE)||'{}')
+  const todayReq=u.today_date===today?(u.today_requests||0):0
+  const todayThb=u.today_date===today?(u.today_thb||0):0
+  const el=id=>document.getElementById(id)
+  if(el('usage-today-count')) el('usage-today-count').textContent=todayReq
+  if(el('usage-today-thb'))   el('usage-today-thb').textContent  ='฿'+todayThb.toFixed(2)
+  if(el('usage-total-count')) el('usage-total-count').textContent=u.total_requests||0
+  if(el('usage-total-thb'))   el('usage-total-thb').textContent  ='฿'+((u.total_thb||0)).toFixed(2)
+}
+
+function clearNbotUsage() {
+  if(!confirm('รีเซ็ตสถิติการใช้ N-BOT?')) return
+  localStorage.removeItem(SK_USAGE)
+  renderUsage()
 }
 
 // ── N-BOT Chat ───────────────────────────────────────────────────
 const NBOT_QUESTIONS = {
-  '1d': ['วันนี้ทำอะไรได้บ้าง?', 'ควรวิ่งหรือพัก?', 'นอนดีไหมเมื่อคืน?', 'ร่างกายพร้อมแค่ไหน?'],
-  '3d': ['3 วันที่ผ่านมาเป็นยังไง?', 'recovery ดีขึ้นไหม?', 'ควรเพิ่มความหนักได้ไหม?'],
-  '7d': ['สัปดาห์นี้ trend เป็นยังไง?', 'HRV ช่วงนี้เป็นยังไง?', 'วันไหนฟื้นตัวดีสุด?', 'สัปดาห์หน้าควรโฟกัสอะไร?'],
-  '1m': ['เดือนนี้ภาพรวมเป็นยังไง?', 'pattern การนอนเป็นยังไง?', 'ควรปรับอะไรเดือนหน้า?'],
-  '1y': ['ปีนี้สุขภาพโดยรวมเป็นยังไง?', 'เดือนไหนร่างกายดีสุด?', 'แนวโน้มระยะยาวเป็นยังไง?'],
+  '1d': ['วันนี้ทำอะไรได้บ้าง?','ควรวิ่งหรือพัก?','นอนดีไหมเมื่อคืน?','ร่างกายพร้อมแค่ไหน?'],
+  '3d': ['3 วันที่ผ่านมาเป็นยังไง?','recovery ดีขึ้นไหม?','ควรเพิ่มความหนักได้ไหม?'],
+  '7d': ['สัปดาห์นี้ trend เป็นยังไง?','HRV ช่วงนี้เป็นยังไง?','วันไหนฟื้นตัวดีสุด?','สัปดาห์หน้าควรโฟกัสอะไร?'],
+  '1m': ['เดือนนี้ภาพรวมเป็นยังไง?','pattern การนอนเป็นยังไง?','ควรปรับอะไรเดือนหน้า?'],
+  '1y': ['ปีนี้สุขภาพโดยรวมเป็นยังไง?','เดือนไหนร่างกายดีสุด?','แนวโน้มระยะยาวเป็นยังไง?'],
 }
-
 const NBOT_PRICING = {
-  'gemini-3-flash-preview':  { input: 0,      output: 0,    thinking: 0 },
-  'gemini-3-flash':          { input: 0,      output: 0,    thinking: 0 },
-  'gemini-2.5-flash':        { input: 0.075,  output: 0.30, thinking: 0.075 },
-  'gemini-2.5-pro':          { input: 1.25,   output: 10.0, thinking: 3.50 },
-  'gemini-1.5-flash':        { input: 0.075,  output: 0.30, thinking: 0 },
+  'gemini-3-flash-preview':{input:0,output:0,thinking:0},
+  'gemini-3-flash':         {input:0,output:0,thinking:0},
+  'gemini-2.5-flash':       {input:.075,output:.30,thinking:.075},
+  'gemini-2.5-pro':         {input:1.25,output:10.0,thinking:3.50},
 }
-const USD_TO_THB = 35
+const USD_TO_THB=35
 
-let nbotPeriod    = '1d'
-let nbotLoading   = false
-let periodCache   = {}
+let nbotPeriod='1d', nbotLoading=false, periodCache={}
 
-function calcCost(usage, model) {
-  const p = NBOT_PRICING[model] || NBOT_PRICING['gemini-2.5-flash']
-  const inCost  = (usage.promptTokenCount    || 0) / 1e6 * p.input
-  const outCost = (usage.candidatesTokenCount|| 0) / 1e6 * p.output
-  const thkCost = (usage.thoughtsTokenCount  || 0) / 1e6 * p.thinking
-  const totalUSD = inCost + outCost + thkCost
-  const totalTHB = totalUSD * USD_TO_THB
-  return { totalUSD, totalTHB }
+function calcCost(usage,model) {
+  const p=NBOT_PRICING[model]||NBOT_PRICING['gemini-2.5-flash']
+  const totalUSD=((usage.promptTokenCount||0)/1e6*p.input)+((usage.candidatesTokenCount||0)/1e6*p.output)+((usage.thoughtsTokenCount||0)/1e6*p.thinking)
+  return {totalUSD, totalTHB:totalUSD*USD_TO_THB}
 }
 
 function mdToHtml(md) {
   return md
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/^## (.+)$/gm, '<strong style="font-size:1em;color:var(--accent)">$1</strong>')
-    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^- (.+)$/gm, '• $1')
-    .replace(/\n{2,}/g, '<br><br>')
-    .replace(/\n/g, '<br>')
+    .replace(/^## (.+)$/gm,'<strong style="font-size:1em;color:var(--accent)">$1</strong>')
+    .replace(/^### (.+)$/gm,'<strong>$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^[-•] (.+)$/gm,'• $1')
+    .replace(/\n{2,}/g,'<br><br>').replace(/\n/g,'<br>')
 }
 
-function addBubble(role, html, meta = null) {
-  const wrap = document.getElementById('chat-messages')
-  const div  = document.createElement('div')
-  div.className = `bubble bubble-${role}`
-  div.innerHTML = html
-  if (meta) {
-    const m = document.createElement('div')
-    m.className = 'bubble-meta'
-    m.textContent = meta
-    div.appendChild(m)
-  }
-  wrap.appendChild(div)
-  wrap.scrollTop = wrap.scrollHeight
+function addBubble(role,html,meta=null) {
+  const wrap=document.getElementById('chat-messages')
+  const div=document.createElement('div')
+  div.className=`bubble bubble-${role}`
+  div.innerHTML=html
+  if (meta) { const m=document.createElement('div'); m.className='bubble-meta'; m.textContent=meta; div.appendChild(m) }
+  wrap.appendChild(div); wrap.scrollTop=wrap.scrollHeight
   return div
 }
 
 function addThinking() {
-  const wrap = document.getElementById('chat-messages')
-  const div  = document.createElement('div')
-  div.className = 'bubble bubble-bot bubble-thinking'
-  div.innerHTML = '<span></span><span></span><span></span>'
-  wrap.appendChild(div)
-  wrap.scrollTop = wrap.scrollHeight
+  const wrap=document.getElementById('chat-messages')
+  const div=document.createElement('div')
+  div.className='bubble bubble-bot bubble-thinking'
+  div.innerHTML='<span></span><span></span><span></span>'
+  wrap.appendChild(div); wrap.scrollTop=wrap.scrollHeight
   return div
 }
 
 function setChipsDisabled(disabled) {
-  document.querySelectorAll('.chip').forEach(c => {
-    if (disabled) c.classList.add('disabled')
-    else c.classList.remove('disabled')
-  })
+  document.querySelectorAll('.chip').forEach(c=>{ if(disabled) c.classList.add('disabled'); else c.classList.remove('disabled') })
 }
 
 function renderChips(period) {
-  const el = document.getElementById('question-chips')
-  el.innerHTML = NBOT_QUESTIONS[period]
-    .map(q => `<button class="chip" onclick="askNbot('${q.replace(/'/g,"\\'")}',this)">${q}</button>`)
-    .join('')
+  document.getElementById('question-chips').innerHTML=
+    NBOT_QUESTIONS[period].map(q=>`<button class="chip" onclick="askNbot('${q.replace(/'/g,"\\'")}',this)">${q}</button>`).join('')
 }
 
-async function selectPeriod(period, el) {
-  nbotPeriod = period
-  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'))
+async function selectPeriod(period,el) {
+  nbotPeriod=period
+  document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'))
   el.classList.add('active')
   renderChips(period)
-  const labels = { '1d':'วันนี้','3d':'3 วัน','7d':'7 วัน','1m':'1 เดือน','1y':'1 ปี' }
-  addBubble('bot', `เปลี่ยนเป็นช่วง <strong>${labels[period]}</strong> แล้วครับ — กดคำถามได้เลย`)
+  const labels={'1d':'วันนี้','3d':'3 วัน','7d':'7 วัน','1m':'1 เดือน','1y':'1 ปี'}
+  addBubble('bot',`เปลี่ยนเป็นช่วง <strong>${labels[period]}</strong> แล้วครับ`)
 }
 
 async function fetchPeriodContext(period) {
   if (periodCache[period]) return periodCache[period]
-
-  const today = todayStr()
-  const days  = { '1d':1, '3d':3, '7d':7, '1m':30, '1y':365 }[period] || 7
-  const from  = daysAgoStr(days)
-  const p     = { start_date: from, end_date: today }
-
-  const [dailySleepR, sleepR, readyR, actR] = await Promise.all([
-    ouraFetch('/usercollection/daily_sleep', p),
-    ouraFetch('/usercollection/sleep', p),
-    ouraFetch('/usercollection/daily_readiness', p),
-    ouraFetch('/usercollection/daily_activity', p),
+  const today=todayStr(), days={'1d':1,'3d':3,'7d':7,'1m':30,'1y':365}[period]||7
+  const p={start_date:daysAgoStr(days),end_date:today}
+  const [dailySleepR,sleepR,readyR,actR]=await Promise.all([
+    ouraFetch('/usercollection/daily_sleep',p),
+    ouraFetch('/usercollection/sleep',p),
+    ouraFetch('/usercollection/daily_readiness',p),
+    ouraFetch('/usercollection/daily_activity',p),
   ])
-
-  const readiness = readyR.data   || []
-  const sleeps    = dailySleepR.data || []
-  const sleepRaws = sleepR.data   || []
-  const acts      = actR.data     || []
-
-  const avg = (arr, key) => {
-    const vals = arr.map(d => d[key] ?? d.contributors?.[key]).filter(v => v != null)
-    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null
+  const readiness=readyR.data||[], sleeps=dailySleepR.data||[], sleepRaws=sleepR.data||[], acts=actR.data||[]
+  const avg=(arr,key)=>{ const v=arr.map(d=>d[key]??d.contributors?.[key]).filter(v=>v!=null); return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null }
+  const ctx={
+    period,days,
+    avgReadiness:avg(readiness,'score'),avgSleep:avg(sleeps,'score'),
+    avgHRV:avg(sleepRaws,'average_hrv'),avgRestingHR:avg(sleepRaws,'lowest_heart_rate'),
+    avgDeepMin:sleepRaws.length?Math.round(sleepRaws.reduce((a,b)=>a+(b.deep_sleep_duration||0),0)/sleepRaws.length/60):null,
+    avgREMMin:sleepRaws.length?Math.round(sleepRaws.reduce((a,b)=>a+(b.rem_sleep_duration||0),0)/sleepRaws.length/60):null,
+    avgTotalMin:sleepRaws.length?Math.round(sleepRaws.reduce((a,b)=>a+(b.total_sleep_duration||0),0)/sleepRaws.length/60):null,
+    avgSteps:avg(acts,'steps'),
+    bestReadiness:readiness.length?Math.max(...readiness.map(d=>d.score||0)):null,
+    worstReadiness:readiness.length?Math.min(...readiness.map(d=>d.score||0)):null,
+    todayReadiness:readiness.at(-1)?.score??null,
+    todaySleep:sleeps.at(-1)?.score??null,
+    todayHRV:sleepRaws.at(-1)?.average_hrv??null,
+    garmin:garminData,
   }
-
-  const ctx = {
-    period,
-    days,
-    avgReadiness:  avg(readiness, 'score'),
-    avgSleep:      avg(sleeps,    'score'),
-    avgHRV:        avg(sleepRaws, 'average_hrv'),
-    avgRestingHR:  avg(sleepRaws, 'lowest_heart_rate'),
-    avgDeepMin:    sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.deep_sleep_duration||0),0)/sleepRaws.length/60) : null,
-    avgREMMin:     sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.rem_sleep_duration ||0),0)/sleepRaws.length/60) : null,
-    avgTotalMin:   sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.total_sleep_duration||0),0)/sleepRaws.length/60) : null,
-    avgSteps:      avg(acts, 'steps'),
-    bestReadiness: readiness.length ? Math.max(...readiness.map(d=>d.score||0)) : null,
-    worstReadiness:readiness.length ? Math.min(...readiness.map(d=>d.score||0)) : null,
-    todayReadiness:readiness.at(-1)?.score ?? null,
-    todaySleep:    sleeps.at(-1)?.score ?? null,
-    todayHRV:      sleepRaws.at(-1)?.average_hrv ?? null,
-    garmin:        garminData,
-  }
-
-  periodCache[period] = ctx
-  return ctx
+  periodCache[period]=ctx; return ctx
 }
 
-function buildNbotPrompt(ctx, question) {
-  const TRAVEL_LABEL = ['น้อย (WFH)', 'ปานกลาง', 'เยอะมาก']
-  const label = { '1d':'วันนี้','3d':'3 วันล่าสุด','7d':'7 วันล่าสุด','1m':'30 วันล่าสุด','1y':'365 วันล่าสุด' }[ctx.period]
-
+function buildNbotPrompt(ctx,question) {
+  const TRAVEL_LABEL=['น้อย (WFH)','ปานกลาง','เยอะมาก']
+  const label={'1d':'วันนี้','3d':'3 วันล่าสุด','7d':'7 วันล่าสุด','1m':'30 วันล่าสุด','1y':'365 วันล่าสุด'}[ctx.period]
   return `คุณคือผู้เชี่ยวชาญด้านสุขภาพและการฟื้นฟูร่างกาย นักวิทยาศาสตร์การกีฬา
 ตอบภาษาไทย กระชับ ตรงประเด็น ห้ามอ้อมค้อม ห้ามแนะนำให้ไปพบแพทย์
 ใช้ Markdown: **หัวข้อสำคัญ** และ • bullet points ตอบให้ครบถ้วนสมบูรณ์ ไม่ตัดกลางคัน
 
 ข้อมูลสุขภาพ (${label}):
-• Readiness เฉลี่ย ${ctx.avgReadiness ?? '?'}/100 (วันนี้ ${ctx.todayReadiness ?? '?'})
-• Sleep Score เฉลี่ย ${ctx.avgSleep ?? '?'}/100 (วันนี้ ${ctx.todaySleep ?? '?'})
-• HRV เฉลี่ย ${ctx.avgHRV ?? '?'} ms (วันนี้ ${ctx.todayHRV ?? '?'} ms)
-• Resting HR เฉลี่ย ${ctx.avgRestingHR ?? '?'} bpm
-• นอนรวมเฉลี่ย ${ctx.avgTotalMin ?? '?'} นาที | Deep ${ctx.avgDeepMin ?? '?'} นาที | REM ${ctx.avgREMMin ?? '?'} นาที
-• Readiness ดีสุด ${ctx.bestReadiness ?? '?'} / แย่สุด ${ctx.worstReadiness ?? '?'}
-• Steps เฉลี่ย ${ctx.avgSteps ?? '?'}${ctx.garmin ? ` | Body Battery ${ctx.garmin.body_battery ?? '?'}` : ''}
+• Readiness เฉลี่ย ${ctx.avgReadiness??'?'}/100 (วันนี้ ${ctx.todayReadiness??'?'})
+• Sleep Score เฉลี่ย ${ctx.avgSleep??'?'}/100 (วันนี้ ${ctx.todaySleep??'?'})
+• HRV เฉลี่ย ${ctx.avgHRV??'?'} ms (วันนี้ ${ctx.todayHRV??'?'} ms)
+• Resting HR เฉลี่ย ${ctx.avgRestingHR??'?'} bpm
+• นอนรวมเฉลี่ย ${ctx.avgTotalMin??'?'} นาที | Deep ${ctx.avgDeepMin??'?'} นาที | REM ${ctx.avgREMMin??'?'} นาที
+• Readiness ดีสุด ${ctx.bestReadiness??'?'} / แย่สุด ${ctx.worstReadiness??'?'}
+• Steps เฉลี่ย ${ctx.avgSteps??'?'}${ctx.garmin?` | Body Battery ${ctx.garmin.body_battery??'?'}`:''}
 • การเดินทาง: ${TRAVEL_LABEL[travelLevel]}
 
 คำถาม: ${question}`
 }
 
-const NBOT_CACHE_KEY = 'hd_nbot_cache'
-
-function getNbotCache(period, question) {
-  const today = todayStr()
-  const cache = JSON.parse(localStorage.getItem(NBOT_CACHE_KEY) || '{}')
-  const key   = `${today}_${period}_${question}`
-  return cache[key] || null
+const NBOT_CACHE_KEY='hd_nbot_cache'
+function getNbotCache(period,question) {
+  const cache=JSON.parse(localStorage.getItem(NBOT_CACHE_KEY)||'{}')
+  return cache[`${todayStr()}_${period}_${question}`]||null
 }
-
-function setNbotCache(period, question, data) {
-  const today = todayStr()
-  const cache = JSON.parse(localStorage.getItem(NBOT_CACHE_KEY) || '{}')
-  // keep only today's cache
-  const newCache = {}
-  Object.entries(cache).forEach(([k,v]) => { if (k.startsWith(today)) newCache[k]=v })
-  newCache[`${today}_${period}_${question}`] = data
-  localStorage.setItem(NBOT_CACHE_KEY, JSON.stringify(newCache))
+function setNbotCache(period,question,data) {
+  const today=todayStr()
+  const cache=JSON.parse(localStorage.getItem(NBOT_CACHE_KEY)||'{}')
+  const nc={}; Object.entries(cache).forEach(([k,v])=>{ if(k.startsWith(today)) nc[k]=v })
+  nc[`${today}_${period}_${question}`]=data
+  localStorage.setItem(NBOT_CACHE_KEY,JSON.stringify(nc))
 }
 
 async function askNbot(question) {
   if (nbotLoading) return
+  const cached=getNbotCache(nbotPeriod,question)
+  if (cached) { addBubble('user',question); addBubble('bot',cached.text,cached.meta+' 📦 cached'); return }
 
-  // Check cache first
-  const cached = getNbotCache(nbotPeriod, question)
-  if (cached) {
-    addBubble('user', question)
-    addBubble('bot', cached.text, cached.meta + ' 📦 cached')
-    return
-  }
-
-  nbotLoading = true
-  setChipsDisabled(true)
-
-  addBubble('user', question)
-  const thinking = addThinking()
+  nbotLoading=true; setChipsDisabled(true)
+  addBubble('user',question)
+  const thinking=addThinking()
 
   try {
-    const ctx      = await fetchPeriodContext(nbotPeriod)
-    const prompt   = buildNbotPrompt(ctx, question)
-
-    const body = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.5 },
+    const ctx=await fetchPeriodContext(nbotPeriod)
+    const prompt=buildNbotPrompt(ctx,question)
+    const body=JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{maxOutputTokens:2048,temperature:.5},
     })
-
-    const res = await fetch(GEMINI_PROXY || (() => {
-      const m = 'gemini-3-flash-preview'
-      return `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${recall(SK.CLAUDE)}`
-    })(), { method:'POST', headers:{'Content-Type':'application/json'}, body })
-
+    const endpoint=GEMINI_PROXY||`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${recall(SK.CLAUDE)}`
+    const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body})
     thinking.remove()
 
     if (!res.ok) {
-      const err = await res.json().catch(()=>({}))
-      addBubble('bot', `❌ ${err.error?.message || 'เกิดข้อผิดพลาด'}`)
+      const err=await res.json().catch(()=>({}))
+      addBubble('bot',`❌ ${err.error?.message||'เกิดข้อผิดพลาด'}`)
       return
     }
 
-    const data    = await res.json()
-    const parts   = data.candidates?.[0]?.content?.parts || []
-    const text    = parts.map(p => p.text||'').join('').trim()
-    const usage   = data.usageMetadata || {}
-    const model   = data.modelVersion  || 'gemini-3-flash-preview'
-    const { totalTHB } = calcCost(usage, model)
+    const data=await res.json()
+    const parts=data.candidates?.[0]?.content?.parts||[]
+    const text=parts.map(p=>p.text||'').join('').trim()
+    const usage=data.usageMetadata||{}
+    const model=data.modelVersion||'gemini-3-flash-preview'
+    const {totalTHB}=calcCost(usage,model)
 
-    const inTok  = usage.promptTokenCount    || 0
-    const outTok = usage.candidatesTokenCount|| 0
-    const thkTok = usage.thoughtsTokenCount  || 0
-    const total  = usage.totalTokenCount     || (inTok+outTok+thkTok)
-    const meta   = `📊 ${model} | in ${inTok} + out ${outTok}${thkTok?` + think ${thkTok}`:''} = ${total} tokens | ฿${totalTHB < 0.01 ? '0.00 (free)' : totalTHB.toFixed(4)}`
+    const inTok=usage.promptTokenCount||0, outTok=usage.candidatesTokenCount||0, thkTok=usage.thoughtsTokenCount||0
+    const meta=`📊 ${model} | ${inTok}+${outTok}${thkTok?`+${thkTok}think`:''} tokens | ฿${totalTHB<.01?'0.00 (free)':totalTHB.toFixed(4)}`
 
-    setNbotCache(nbotPeriod, question, { text: mdToHtml(text), meta })
-    addBubble('bot', mdToHtml(text), meta)
+    trackUsage(totalTHB)
+    setNbotCache(nbotPeriod,question,{text:mdToHtml(text),meta})
+    addBubble('bot',mdToHtml(text),meta)
 
   } catch(e) {
     thinking.remove()
-    addBubble('bot', `❌ ${e.message}`)
+    addBubble('bot',`❌ ${e.message}`)
   } finally {
-    nbotLoading = false
-    setChipsDisabled(false)
+    nbotLoading=false; setChipsDisabled(false)
   }
 }
 
 // ── Data Tab ─────────────────────────────────────────────────────
-let dataPeriod    = '1d'
-let dataCache     = {}
+let dataPeriod='7d', dataCache={}
+const DATA_PERIOD_DAYS={'1d':1,'3d':3,'7d':7,'1m':30,'3m':90,'6m':180,'1y':365,'all':730}
 
-const DATA_PERIOD_DAYS = { '1d':1,'3d':3,'7d':7,'1m':30,'3m':90,'6m':180,'1y':365,'all':730 }
-
-async function selectDataPeriod(period, el) {
-  dataPeriod = period
-  document.querySelectorAll('.data-period-tab').forEach(t => t.classList.remove('active'))
+async function selectDataPeriod(period,el) {
+  dataPeriod=period
+  document.querySelectorAll('.data-period-tab').forEach(t=>t.classList.remove('active'))
   el.classList.add('active')
   await renderDataTab(period)
 }
 
 async function renderDataTab(period) {
-  const grid = document.getElementById('data-metrics-grid')
-  grid.innerHTML = '<div class="data-metric-card" style="grid-column:1/-1"><div class="skeleton" style="height:40px"></div></div>'
+  const grid=document.getElementById('data-metrics-grid')
+  if (!grid) return
+  grid.innerHTML='<div class="data-metric-card" style="grid-column:1/-1"><div class="skeleton" style="height:40px"></div></div>'
 
   try {
-    const days  = DATA_PERIOD_DAYS[period] || 7
-    const today = todayStr()
-    const from  = daysAgoStr(days)
-    const p     = { start_date: from, end_date: today }
-
-    const [dailySleepR, sleepR, readyR, actR] = await Promise.all([
-      ouraFetch('/usercollection/daily_sleep', p),
-      ouraFetch('/usercollection/sleep', p),
-      ouraFetch('/usercollection/daily_readiness', p),
-      ouraFetch('/usercollection/daily_activity', p),
+    const days=DATA_PERIOD_DAYS[period]||7
+    const p={start_date:daysAgoStr(days),end_date:todayStr()}
+    const [dailySleepR,sleepR,readyR,actR]=await Promise.all([
+      ouraFetch('/usercollection/daily_sleep',p),
+      ouraFetch('/usercollection/sleep',p),
+      ouraFetch('/usercollection/daily_readiness',p),
+      ouraFetch('/usercollection/daily_activity',p),
     ])
-
-    const readiness = readyR.data     || []
-    const sleeps    = dailySleepR.data|| []
-    const sleepRaws = sleepR.data     || []
-    const acts      = actR.data       || []
-
-    const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null
-    const avgR  = avg(readiness.map(d=>d.score).filter(Boolean))
-    const avgS  = avg(sleeps.map(d=>d.score).filter(Boolean))
-    const avgHRV= avg(sleepRaws.map(d=>d.average_hrv).filter(Boolean))
-    const avgRHR= avg(sleepRaws.map(d=>d.lowest_heart_rate).filter(Boolean))
-    const avgHrs= sleepRaws.length ? (sleepRaws.reduce((a,b)=>a+(b.total_sleep_duration||0),0)/sleepRaws.length/3600).toFixed(1) : null
-    const avgDeep=sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.deep_sleep_duration||0),0)/sleepRaws.length/60) : null
-    const avgREM= sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.rem_sleep_duration||0),0)/sleepRaws.length/60) : null
+    const readiness=readyR.data||[], sleeps=dailySleepR.data||[], sleepRaws=sleepR.data||[], acts=actR.data||[]
+    const avg=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null
+    const avgR =avg(readiness.map(d=>d.score).filter(Boolean))
+    const avgS =avg(sleeps.map(d=>d.score).filter(Boolean))
+    const avgHRV=avg(sleepRaws.map(d=>d.average_hrv).filter(Boolean))
+    const avgRHR=avg(sleepRaws.map(d=>d.lowest_heart_rate).filter(Boolean))
+    const avgHrs=sleepRaws.length?(sleepRaws.reduce((a,b)=>a+(b.total_sleep_duration||0),0)/sleepRaws.length/3600).toFixed(1):null
+    const avgDeep=sleepRaws.length?Math.round(sleepRaws.reduce((a,b)=>a+(b.deep_sleep_duration||0),0)/sleepRaws.length/60):null
+    const avgREM=sleepRaws.length?Math.round(sleepRaws.reduce((a,b)=>a+(b.rem_sleep_duration||0),0)/sleepRaws.length/60):null
     const avgSteps=avg(acts.map(d=>d.steps).filter(Boolean))
-    const bestR = readiness.length ? Math.max(...readiness.map(d=>d.score||0)) : null
-    const worstR= readiness.length ? Math.min(...readiness.map(d=>d.score||0)) : null
-    const bestDay = readiness.find(d=>d.score===bestR)?.day || ''
-    const worstDay= readiness.find(d=>d.score===worstR)?.day || ''
+    const bestR=readiness.length?Math.max(...readiness.map(d=>d.score||0)):null
+    const worstR=readiness.length?Math.min(...readiness.map(d=>d.score||0)):null
+    const bestDay=readiness.find(d=>d.score===bestR)?.day||''
+    const worstDay=readiness.find(d=>d.score===worstR)?.day||''
 
-    const metrics = [
-      { label:'Readiness', value: avgR,    unit:'/ 100', color: zoneColor('readiness', avgR) },
-      { label:'Sleep Score',value: avgS,   unit:'/ 100', color: zoneColor('sleep', avgS) },
-      { label:'HRV',       value: avgHRV,  unit:'ms',    color: zoneColor('hrv', avgHRV) },
-      { label:'Resting HR',value: avgRHR,  unit:'bpm',   color:'var(--text)' },
-      { label:'นอนรวม',    value: avgHrs,  unit:'ชม.',   color:'var(--text)' },
-      { label:'Deep Sleep',value: avgDeep, unit:'นาที',  color:'#6366f1' },
-      { label:'REM Sleep', value: avgREM,  unit:'นาที',  color:'#a78bfa' },
-      { label:'Steps',     value: avgSteps?avgSteps.toLocaleString():null, unit:'ก้าว', color:'var(--text)' },
+    const metrics=[
+      {label:'Readiness', value:avgR,    unit:'/100', color:zoneColor('readiness',avgR)},
+      {label:'Sleep',     value:avgS,    unit:'/100', color:zoneColor('sleep',avgS)},
+      {label:'HRV',       value:avgHRV,  unit:'ms',   color:zoneColor('hrv',avgHRV)},
+      {label:'Resting HR',value:avgRHR,  unit:'bpm',  color:'var(--text)'},
+      {label:'นอนรวม',    value:avgHrs,  unit:'ชม.',  color:'var(--text)'},
+      {label:'Deep',      value:avgDeep, unit:'m',    color:'#6366f1'},
+      {label:'REM',       value:avgREM,  unit:'m',    color:'#a78bfa'},
+      {label:'Steps',     value:avgSteps?avgSteps.toLocaleString():null, unit:'ก้าว', color:'var(--text)'},
     ]
-
-    grid.innerHTML = metrics.map(m => `
+    grid.innerHTML=metrics.map(m=>`
       <div class="data-metric-card">
         <div class="data-metric-label">${m.label}</div>
-        <div class="data-metric-value" style="color:${m.color}">${m.value ?? '—'}<span class="data-metric-unit"> ${m.value != null ? m.unit : ''}</span></div>
+        <div class="data-metric-value" style="color:${m.color}">${m.value??'—'}<span class="data-metric-unit"> ${m.value!=null?m.unit:''}</span></div>
       </div>`).join('')
 
-    // Chart
-    const chartData = { readiness, sleep: sleeps }
-    renderDataChart(chartData, sleepRaws)
+    renderDataChart({readiness,sleep:sleeps},sleepRaws)
 
-    // Insight
-    const label = { '1d':'วันนี้','3d':'3 วัน','7d':'7 วัน','1m':'1 เดือน','3m':'3 เดือน','6m':'6 เดือน','1y':'1 ปี','all':'ทั้งหมด' }[period]
-    const trendR = readiness.length >= 3
-      ? (readiness.slice(-3).reduce((a,b)=>a+b.score,0)/3 > readiness.slice(0,3).reduce((a,b)=>a+b.score,0)/3 ? '↑ ดีขึ้น' : '↓ ลดลง')
-      : '—'
-
-    document.getElementById('data-insight-text').innerHTML = `
+    const label={'1d':'วันนี้','3d':'3 วัน','7d':'7 วัน','1m':'1 เดือน','3m':'3 เดือน','6m':'6 เดือน','1y':'1 ปี','all':'ทั้งหมด'}[period]
+    const trendR=readiness.length>=3?(readiness.slice(-3).reduce((a,b)=>a+b.score,0)/3>readiness.slice(0,3).reduce((a,b)=>a+b.score,0)/3?'↑ ดีขึ้น':'↓ ลดลง'):'—'
+    document.getElementById('data-insight-text').innerHTML=`
       <strong>${label} (${readiness.length} วัน)</strong><br>
       • Readiness ดีสุด: <strong>${bestR}</strong> (${bestDay})<br>
       • Readiness แย่สุด: <strong>${worstR}</strong> (${worstDay})<br>
       • แนวโน้ม Readiness: <strong>${trendR}</strong><br>
-      ${avgHRV ? `• HRV เฉลี่ย ${avgHRV}ms — ${avgHRV >= 45 ? '✅ ดี' : avgHRV >= 25 ? '⚠ ปานกลาง' : '🔴 ต่ำ'}<br>` : ''}
-      ${avgHrs ? `• นอนเฉลี่ย ${avgHrs} ชม. — ${parseFloat(avgHrs) >= 7 ? '✅ เพียงพอ' : parseFloat(avgHrs) >= 6 ? '⚠ ค่อนข้างน้อย' : '🔴 น้อยมาก'}<br>` : ''}
+      ${avgHRV?`• HRV เฉลี่ย ${avgHRV}ms — ${avgHRV>=45?'✅ ดี':avgHRV>=25?'⚠ ปานกลาง':'🔴 ต่ำ'}<br>`:''}
+      ${avgHrs?`• นอนเฉลี่ย ${avgHrs} ชม. — ${parseFloat(avgHrs)>=7?'✅ เพียงพอ':parseFloat(avgHrs)>=6?'⚠ ค่อนข้างน้อย':'🔴 น้อยมาก'}<br>`:''}
     `
-
   } catch(e) {
-    grid.innerHTML = `<div class="data-metric-card" style="grid-column:1/-1"><div class="err-card">${e.message}</div></div>`
+    grid.innerHTML=`<div class="data-metric-card" style="grid-column:1/-1"><div class="err-card">${e.message}</div></div>`
   }
 }
 
 function renderDataChart(histData, sleepRaws) {
-  const canvas = document.getElementById('data-trend-chart')
+  const canvas=document.getElementById('data-trend-chart')
   if (!canvas) return
-  const dpr = window.devicePixelRatio || 1
-  const W   = canvas.parentElement.clientWidth - 32
-  const H   = 100
-  canvas.width  = W * dpr
-  canvas.height = H * dpr
-  canvas.style.width  = W + 'px'
-  canvas.style.height = H + 'px'
-  const ctx = canvas.getContext('2d')
-  ctx.scale(dpr, dpr)
+  const dpr=window.devicePixelRatio||1
+  const W=canvas.parentElement.clientWidth-32, H=160
+  canvas.width=W*dpr; canvas.height=H*dpr
+  canvas.style.width=W+'px'; canvas.style.height=H+'px'
+  const ctx=canvas.getContext('2d')
+  ctx.scale(dpr,dpr)
 
-  const pad = { t:8, b:8, l:8, r:8 }
-  const cW  = W - pad.l - pad.r
-  const cH  = H - pad.t - pad.b
+  const pad={t:10,b:28,l:36,r:12}
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b
 
-  ctx.strokeStyle = '#2a2a2a'
-  ctx.lineWidth = 1
-  ;[25,50,75].forEach(v => {
-    const y = pad.t + cH - (v/100)*cH
+  // Y axis
+  ctx.font='10px Space Mono, monospace'; ctx.textAlign='right'
+  ;[0,25,50,75,100].forEach(v=>{
+    const y=pad.t+cH-(v/100)*cH
+    ctx.strokeStyle='#222'; ctx.lineWidth=1
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke()
+    ctx.fillStyle='#555'; ctx.fillText(v,pad.l-5,y+4)
   })
 
-  const draw = (data, color) => {
-    if (!data?.length) return
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2
-    ctx.lineJoin = 'round'; ctx.lineCap = 'round'
-    data.forEach((d,i) => {
-      const x = pad.l + (i/Math.max(data.length-1,1))*cW
-      const y = pad.t + cH - (Math.min(100,Math.max(0,d.score??d))/100)*cH
-      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y)
-    })
+  const readData=histData.readiness||[], sleepData=histData.sleep||[]
+  const n=Math.max(readData.length,1)
+  const xStep=Math.ceil(n/6)
+
+  // X axis date labels
+  ctx.fillStyle='#555'; ctx.textAlign='center'
+  readData.forEach((d,i)=>{
+    if(i%xStep!==0&&i!==n-1) return
+    const x=pad.l+(i/Math.max(n-1,1))*cW
+    const date=d.day?new Date(d.day):null
+    if(date) ctx.fillText(`${date.getDate()}/${date.getMonth()+1}`,x,H-6)
+  })
+
+  const draw=(data,color,yFn)=>{
+    if(!data?.length) return
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round'
+    data.forEach((d,i)=>{ const x=pad.l+(i/Math.max(data.length-1,1))*cW,y=pad.t+cH-yFn(d)/100*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y) })
     ctx.stroke()
-    ctx.fillStyle = color
-    data.forEach((d,i) => {
-      const x = pad.l + (i/Math.max(data.length-1,1))*cW
-      const y = pad.t + cH - (Math.min(100,Math.max(0,d.score??d))/100)*cH
-      ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill()
-    })
+    ctx.fillStyle=color
+    data.forEach((d,i)=>{ const x=pad.l+(i/Math.max(data.length-1,1))*cW,y=pad.t+cH-yFn(d)/100*cH; ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill() })
   }
 
-  draw(histData.readiness, '#35f18a')
-  draw(histData.sleep,     '#c8f135')
-
-  // HRV normalized to 0-100 (max 100ms)
-  if (sleepRaws?.length) {
-    const hrvData = sleepRaws.map(d => ({ score: Math.min(100, (d.average_hrv||0)) }))
-    draw(hrvData, '#38bdf8')
-  }
-}
-
-// ── Mobile tab switching ──────────────────────────────────────────
-function switchMobileTab(tab, el) {
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
-  el.classList.add('active')
-  document.body.className = `mobile-${tab}`
-
-  if (tab === 'data' && dataPeriod) {
-    setTimeout(() => renderDataTab(dataPeriod), 50)
-  }
+  draw(readData,'#35f18a',d=>Math.min(100,Math.max(0,d.score??0)))
+  draw(sleepData,'#c8f135',d=>Math.min(100,Math.max(0,d.score??0)))
+  if(sleepRaws?.length) draw(sleepRaws,'#38bdf8',d=>Math.min(100,Math.max(0,d.average_hrv??0)))
 }
 
 // ── Init ─────────────────────────────────────────────────────────
 function init() {
-  // โหลดจาก config.js ถ้ามี (override localStorage)
-  const cfg = window.HD_CONFIG || {}
-  if (cfg.OURA_TOKEN)  store(SK.OURA,   cfg.OURA_TOKEN)
-  if (cfg.GEMINI_KEY)  store(SK.CLAUDE, cfg.GEMINI_KEY)
-
-  // เปิด dashboard เลย — ถ้าไม่มี key ยังโหลดได้ แค่ AI coach จะ error
+  const cfg=window.HD_CONFIG||{}
+  if(cfg.OURA_TOKEN) store(SK.OURA,cfg.OURA_TOKEN)
+  if(cfg.GEMINI_KEY) store(SK.CLAUDE,cfg.GEMINI_KEY)
+  renderChips('1d')
+  renderUsage()
   loadDashboard()
 }
-
 init()
 </script>
 
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .catch(err => console.warn('SW registration failed:', err))
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('SW:',err))
   })
 }
 </script>

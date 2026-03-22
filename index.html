@@ -548,6 +548,142 @@
       .vital-score { font-size: 2.4rem; }
       .header-date { display: none; }
     }
+
+    /* ── N-BOT Chat ───────────────────────────────────── */
+    .nbot-wrap {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+    .nbot-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .nbot-name {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.5rem;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+    .nbot-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--optimal);
+      box-shadow: 0 0 6px var(--optimal);
+      animation: pulse 2s infinite;
+    }
+    .nbot-status { font-size: .72rem; color: var(--optimal); font-family: 'Space Mono', monospace; }
+
+    .period-tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+    .period-tab {
+      flex: 1;
+      padding: 0.35rem 0;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: .75rem;
+      font-family: 'Space Mono', monospace;
+      cursor: pointer;
+      text-align: center;
+      transition: all .2s;
+    }
+    .period-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      min-height: 200px;
+      max-height: 380px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .bubble {
+      max-width: 85%;
+      border-radius: 12px;
+      padding: 0.65rem 0.875rem;
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+    .bubble-bot {
+      align-self: flex-start;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+    .bubble-user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #000;
+      border-bottom-right-radius: 3px;
+      font-weight: 500;
+    }
+    .bubble-meta {
+      margin-top: 0.35rem;
+      font-size: .68rem;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+    }
+    .bubble-thinking {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 0.65rem 0.875rem;
+    }
+    .bubble-thinking span {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: bounce 1.2s infinite;
+    }
+    .bubble-thinking span:nth-child(2) { animation-delay: .2s; }
+    .bubble-thinking span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      0%,80%,100% { transform: translateY(0); opacity:.4; }
+      40% { transform: translateY(-6px); opacity:1; }
+    }
+
+    .question-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .chip {
+      padding: 0.4rem 0.75rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: 'Noto Sans Thai', sans-serif;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    .chip:disabled, .chip.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -604,12 +740,30 @@
   <!-- Main Content -->
   <div class="main">
 
-    <!-- AI Coach (left 40%) -->
+    <!-- N-BOT Chat (left 40%) -->
     <section class="ai-col" id="ai-col">
-      <div class="section-title">AI COACH</div>
-      <div class="loading-box">
-        <div class="spinner"></div>
-        <span>กำลังวิเคราะห์สภาพร่างกาย...</span>
+      <div class="nbot-wrap">
+        <div class="nbot-header">
+          <div class="nbot-name">N-BOT</div>
+          <div class="nbot-dot"></div>
+          <div class="nbot-status">online</div>
+        </div>
+
+        <div class="period-tabs">
+          <div class="period-tab active" onclick="selectPeriod('1d',this)">1วัน</div>
+          <div class="period-tab" onclick="selectPeriod('3d',this)">3วัน</div>
+          <div class="period-tab" onclick="selectPeriod('7d',this)">7วัน</div>
+          <div class="period-tab" onclick="selectPeriod('1m',this)">1เดือน</div>
+          <div class="period-tab" onclick="selectPeriod('1y',this)">1ปี</div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="bubble bubble-bot">สวัสดีครับ! ผม N-BOT 👋<br>เลือกช่วงเวลาแล้วกดคำถามได้เลย</div>
+        </div>
+
+        <div class="question-chips" id="question-chips">
+          <!-- chips inserted by JS -->
+        </div>
       </div>
     </section>
 
@@ -1405,28 +1559,216 @@ async function loadDashboard() {
     setTimeout(() => renderChart(ouraData.history), 120)
   }
 
-  // ── AI Coach ──
-  setStatus('load', 'Oura ✓ — กำลังถาม Claude...')
-  document.getElementById('ai-col').innerHTML = `
-    <div class="section-title">AI COACH</div>
-    <div class="loading-box"><div class="spinner"></div><span>กำลังวิเคราะห์...</span></div>`
-
-  let coaching = null
-  try {
-    coaching = await askClaude(buildPrompt(ouraData, garminData, travelLevel))
-    renderAI(coaching)
-    setStatus('live', 'พร้อม')
-  } catch (err) {
-    console.error(err)
-    document.getElementById('ai-col').innerHTML = `
-      <div class="section-title">AI COACH</div>
-      <div class="err-card">ไม่สามารถโหลด AI Coach ได้<br><small>${err.message}</small></div>`
-    setStatus('live', 'Oura ✓ | Claude ✗')
-  }
-
-  if (ouraData) saveHistory(ouraData, garminData, coaching)
+  if (ouraData) saveHistory(ouraData, garminData, null)
+  periodCache = {}  // clear cache เมื่อ refresh
+  renderChips('1d')
+  setStatus('live', 'พร้อม')
   document.getElementById('footer-sync').textContent =
     `Sync ล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`
+}
+
+// ── N-BOT Chat ───────────────────────────────────────────────────
+const NBOT_QUESTIONS = {
+  '1d': ['วันนี้ทำอะไรได้บ้าง?', 'ควรวิ่งหรือพัก?', 'นอนดีไหมเมื่อคืน?', 'ร่างกายพร้อมแค่ไหน?'],
+  '3d': ['3 วันที่ผ่านมาเป็นยังไง?', 'recovery ดีขึ้นไหม?', 'ควรเพิ่มความหนักได้ไหม?'],
+  '7d': ['สัปดาห์นี้ trend เป็นยังไง?', 'HRV ช่วงนี้เป็นยังไง?', 'วันไหนฟื้นตัวดีสุด?', 'สัปดาห์หน้าควรโฟกัสอะไร?'],
+  '1m': ['เดือนนี้ภาพรวมเป็นยังไง?', 'pattern การนอนเป็นยังไง?', 'ควรปรับอะไรเดือนหน้า?'],
+  '1y': ['ปีนี้สุขภาพโดยรวมเป็นยังไง?', 'เดือนไหนร่างกายดีสุด?', 'แนวโน้มระยะยาวเป็นยังไง?'],
+}
+
+const NBOT_PRICING = {
+  'gemini-3-flash-preview':  { input: 0,      output: 0,    thinking: 0 },
+  'gemini-3-flash':          { input: 0,      output: 0,    thinking: 0 },
+  'gemini-2.5-flash':        { input: 0.075,  output: 0.30, thinking: 0.075 },
+  'gemini-2.5-pro':          { input: 1.25,   output: 10.0, thinking: 3.50 },
+  'gemini-1.5-flash':        { input: 0.075,  output: 0.30, thinking: 0 },
+}
+const USD_TO_THB = 35
+
+let nbotPeriod    = '1d'
+let nbotLoading   = false
+let periodCache   = {}
+
+function calcCost(usage, model) {
+  const p = NBOT_PRICING[model] || NBOT_PRICING['gemini-2.5-flash']
+  const inCost  = (usage.promptTokenCount    || 0) / 1e6 * p.input
+  const outCost = (usage.candidatesTokenCount|| 0) / 1e6 * p.output
+  const thkCost = (usage.thoughtsTokenCount  || 0) / 1e6 * p.thinking
+  const totalUSD = inCost + outCost + thkCost
+  const totalTHB = totalUSD * USD_TO_THB
+  return { totalUSD, totalTHB }
+}
+
+function addBubble(role, html, meta = null) {
+  const wrap = document.getElementById('chat-messages')
+  const div  = document.createElement('div')
+  div.className = `bubble bubble-${role}`
+  div.innerHTML = html
+  if (meta) {
+    const m = document.createElement('div')
+    m.className = 'bubble-meta'
+    m.textContent = meta
+    div.appendChild(m)
+  }
+  wrap.appendChild(div)
+  wrap.scrollTop = wrap.scrollHeight
+  return div
+}
+
+function addThinking() {
+  const wrap = document.getElementById('chat-messages')
+  const div  = document.createElement('div')
+  div.className = 'bubble bubble-bot bubble-thinking'
+  div.innerHTML = '<span></span><span></span><span></span>'
+  wrap.appendChild(div)
+  wrap.scrollTop = wrap.scrollHeight
+  return div
+}
+
+function setChipsDisabled(disabled) {
+  document.querySelectorAll('.chip').forEach(c => {
+    if (disabled) c.classList.add('disabled')
+    else c.classList.remove('disabled')
+  })
+}
+
+function renderChips(period) {
+  const el = document.getElementById('question-chips')
+  el.innerHTML = NBOT_QUESTIONS[period]
+    .map(q => `<button class="chip" onclick="askNbot('${q.replace(/'/g,"\\'")}',this)">${q}</button>`)
+    .join('')
+}
+
+async function selectPeriod(period, el) {
+  nbotPeriod = period
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  renderChips(period)
+  const labels = { '1d':'วันนี้','3d':'3 วัน','7d':'7 วัน','1m':'1 เดือน','1y':'1 ปี' }
+  addBubble('bot', `เปลี่ยนเป็นช่วง <strong>${labels[period]}</strong> แล้วครับ — กดคำถามได้เลย`)
+}
+
+async function fetchPeriodContext(period) {
+  if (periodCache[period]) return periodCache[period]
+
+  const today = todayStr()
+  const days  = { '1d':1, '3d':3, '7d':7, '1m':30, '1y':365 }[period] || 7
+  const from  = daysAgoStr(days)
+  const p     = { start_date: from, end_date: today }
+
+  const [dailySleepR, sleepR, readyR, actR] = await Promise.all([
+    ouraFetch('/usercollection/daily_sleep', p),
+    ouraFetch('/usercollection/sleep', p),
+    ouraFetch('/usercollection/daily_readiness', p),
+    ouraFetch('/usercollection/daily_activity', p),
+  ])
+
+  const readiness = readyR.data   || []
+  const sleeps    = dailySleepR.data || []
+  const sleepRaws = sleepR.data   || []
+  const acts      = actR.data     || []
+
+  const avg = (arr, key) => {
+    const vals = arr.map(d => d[key] ?? d.contributors?.[key]).filter(v => v != null)
+    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null
+  }
+
+  const ctx = {
+    period,
+    days,
+    avgReadiness:  avg(readiness, 'score'),
+    avgSleep:      avg(sleeps,    'score'),
+    avgHRV:        avg(sleepRaws, 'average_hrv'),
+    avgRestingHR:  avg(sleepRaws, 'lowest_heart_rate'),
+    avgDeepMin:    sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.deep_sleep_duration||0),0)/sleepRaws.length/60) : null,
+    avgREMMin:     sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.rem_sleep_duration ||0),0)/sleepRaws.length/60) : null,
+    avgTotalMin:   sleepRaws.length ? Math.round(sleepRaws.reduce((a,b)=>a+(b.total_sleep_duration||0),0)/sleepRaws.length/60) : null,
+    avgSteps:      avg(acts, 'steps'),
+    bestReadiness: readiness.length ? Math.max(...readiness.map(d=>d.score||0)) : null,
+    worstReadiness:readiness.length ? Math.min(...readiness.map(d=>d.score||0)) : null,
+    todayReadiness:readiness.at(-1)?.score ?? null,
+    todaySleep:    sleeps.at(-1)?.score ?? null,
+    todayHRV:      sleepRaws.at(-1)?.average_hrv ?? null,
+    garmin:        garminData,
+  }
+
+  periodCache[period] = ctx
+  return ctx
+}
+
+function buildNbotPrompt(ctx, question) {
+  const TRAVEL_LABEL = ['น้อย (WFH)', 'ปานกลาง', 'เยอะมาก']
+  const label = { '1d':'วันนี้','3d':'3 วันล่าสุด','7d':'7 วันล่าสุด','1m':'30 วันล่าสุด','1y':'365 วันล่าสุด' }[ctx.period]
+
+  return `คุณคือโค้ชสุขภาพส่วนตัว N-BOT พูดภาษาไทย กระชับ เป็นกันเอง
+ตอบคำถามนี้เป็นข้อความธรรมดา ไม่ใช่ JSON ไม่เกิน 5 ประโยค:
+
+ข้อมูลสุขภาพ (${label}):
+- Readiness เฉลี่ย: ${ctx.avgReadiness ?? '?'}/100 (วันนี้: ${ctx.todayReadiness ?? '?'})
+- Sleep Score เฉลี่ย: ${ctx.avgSleep ?? '?'}/100 (วันนี้: ${ctx.todaySleep ?? '?'})
+- HRV เฉลี่ย: ${ctx.avgHRV ?? '?'} ms (วันนี้: ${ctx.todayHRV ?? '?'})
+- Resting HR เฉลี่ย: ${ctx.avgRestingHR ?? '?'} bpm
+- นอนรวมเฉลี่ย: ${ctx.avgTotalMin ?? '?'} นาที (Deep ${ctx.avgDeepMin ?? '?'} นาที, REM ${ctx.avgREMMin ?? '?'} นาที)
+- Steps เฉลี่ย: ${ctx.avgSteps ?? '?'}
+- Readiness ดีสุด/แย่สุด: ${ctx.bestReadiness ?? '?'} / ${ctx.worstReadiness ?? '?'}
+${ctx.garmin ? `- Body Battery: ${ctx.garmin.body_battery ?? '?'}` : ''}
+- การเดินทาง: ${TRAVEL_LABEL[travelLevel]}
+
+คำถาม: ${question}`
+}
+
+async function askNbot(question) {
+  if (nbotLoading) return
+  nbotLoading = true
+  setChipsDisabled(true)
+
+  addBubble('user', question)
+  const thinking = addThinking()
+
+  try {
+    const ctx      = await fetchPeriodContext(nbotPeriod)
+    const prompt   = buildNbotPrompt(ctx, question)
+
+    const body = JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 512, temperature: 0.5 },
+    })
+
+    const res = await fetch(GEMINI_PROXY || (() => {
+      const m = 'gemini-3-flash-preview'
+      return `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${recall(SK.CLAUDE)}`
+    })(), { method:'POST', headers:{'Content-Type':'application/json'}, body })
+
+    thinking.remove()
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}))
+      addBubble('bot', `❌ ${err.error?.message || 'เกิดข้อผิดพลาด'}`)
+      return
+    }
+
+    const data    = await res.json()
+    const parts   = data.candidates?.[0]?.content?.parts || []
+    const text    = parts.map(p => p.text||'').join('').trim()
+    const usage   = data.usageMetadata || {}
+    const model   = data.modelVersion  || 'gemini-3-flash-preview'
+    const { totalTHB } = calcCost(usage, model)
+
+    const inTok  = usage.promptTokenCount    || 0
+    const outTok = usage.candidatesTokenCount|| 0
+    const thkTok = usage.thoughtsTokenCount  || 0
+    const total  = usage.totalTokenCount     || (inTok+outTok+thkTok)
+    const meta   = `📊 ${model} | in ${inTok} + out ${outTok}${thkTok?` + think ${thkTok}`:''} = ${total} tokens | ฿${totalTHB < 0.01 ? '0.00 (free)' : totalTHB.toFixed(4)}`
+
+    addBubble('bot', text.replace(/\n/g,'<br>'), meta)
+
+  } catch(e) {
+    thinking.remove()
+    addBubble('bot', `❌ ${e.message}`)
+  } finally {
+    nbotLoading = false
+    setChipsDisabled(false)
+  }
 }
 
 // ── Init ─────────────────────────────────────────────────────────

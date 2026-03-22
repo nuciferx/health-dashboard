@@ -1599,6 +1599,18 @@ function calcCost(usage, model) {
   return { totalUSD, totalTHB }
 }
 
+function mdToHtml(md) {
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^## (.+)$/gm, '<strong style="font-size:1em;color:var(--accent)">$1</strong>')
+    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '• $1')
+    .replace(/\n{2,}/g, '<br><br>')
+    .replace(/\n/g, '<br>')
+}
+
 function addBubble(role, html, meta = null) {
   const wrap = document.getElementById('chat-messages')
   const div  = document.createElement('div')
@@ -1700,8 +1712,9 @@ function buildNbotPrompt(ctx, question) {
   const TRAVEL_LABEL = ['น้อย (WFH)', 'ปานกลาง', 'เยอะมาก']
   const label = { '1d':'วันนี้','3d':'3 วันล่าสุด','7d':'7 วันล่าสุด','1m':'30 วันล่าสุด','1y':'365 วันล่าสุด' }[ctx.period]
 
-  return `คุณคือโค้ชสุขภาพส่วนตัว N-BOT พูดภาษาไทย กระชับ เป็นกันเอง
-ตอบคำถามนี้เป็นข้อความธรรมดา ไม่ใช่ JSON ไม่เกิน 5 ประโยค:
+  return `คุณคือโค้ชสุขภาพส่วนตัว N-BOT พูดภาษาไทย เป็นกันเอง
+ตอบเป็น Markdown ภาษาไทย ครบถ้วน ไม่ตัดข้อความ พร้อมคำแนะนำ ไม่จำกัดความยาว
+ใช้ ## หัวข้อ, **ตัวหนา**, - bullet points ได้เลย ห้ามตอบเป็น JSON:
 
 ข้อมูลสุขภาพ (${label}):
 - Readiness เฉลี่ย: ${ctx.avgReadiness ?? '?'}/100 (วันนี้: ${ctx.todayReadiness ?? '?'})
@@ -1731,7 +1744,7 @@ async function askNbot(question) {
 
     const body = JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.5 },
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.5 },
     })
 
     const res = await fetch(GEMINI_PROXY || (() => {
@@ -1760,7 +1773,7 @@ async function askNbot(question) {
     const total  = usage.totalTokenCount     || (inTok+outTok+thkTok)
     const meta   = `📊 ${model} | in ${inTok} + out ${outTok}${thkTok?` + think ${thkTok}`:''} = ${total} tokens | ฿${totalTHB < 0.01 ? '0.00 (free)' : totalTHB.toFixed(4)}`
 
-    addBubble('bot', text.replace(/\n/g,'<br>'), meta)
+    addBubble('bot', mdToHtml(text), meta)
 
   } catch(e) {
     thinking.remove()

@@ -1731,7 +1731,7 @@ async function askNbot(question) {
 
     const body = JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 512, temperature: 0.5 },
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.5 },
     })
 
     const res = await fetch(GEMINI_PROXY || (() => {

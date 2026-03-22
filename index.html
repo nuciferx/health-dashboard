@@ -1921,7 +1921,7 @@ function buildNbotPrompt(ctx, question) {
 
   return `คุณคือผู้เชี่ยวชาญด้านสุขภาพและการฟื้นฟูร่างกาย นักวิทยาศาสตร์การกีฬา
 ตอบภาษาไทย กระชับ ตรงประเด็น ห้ามอ้อมค้อม ห้ามแนะนำให้ไปพบแพทย์
-ใช้ Markdown: **หัวข้อสำคัญ** และ • bullet points เท่านั้น ตอบ 5-8 bullets
+ใช้ Markdown: **หัวข้อสำคัญ** และ • bullet points ตอบให้ครบถ้วนสมบูรณ์ ไม่ตัดกลางคัน
 
 ข้อมูลสุขภาพ (${label}):
 • Readiness เฉลี่ย ${ctx.avgReadiness ?? '?'}/100 (วันนี้ ${ctx.todayReadiness ?? '?'})
@@ -1978,7 +1978,7 @@ async function askNbot(question) {
 
     const body = JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 800, temperature: 0.5 },
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.5 },
     })
 
     const res = await fetch(GEMINI_PROXY || (() => {

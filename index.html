@@ -242,8 +242,8 @@
 
     /* ── Trend chart ─────────────────────────────────── */
     .chart-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
+      background: #0d1117;
+      border: 1px solid #1f2937;
       border-radius: 12px;
       padding: 1.1rem 1.25rem;
       margin-bottom: 1.25rem;
@@ -1123,36 +1123,60 @@ function saveCommute() {
   loadCommuteDisplay()
 }
 
-// ── Trend Chart with axis labels ─────────────────────────────────
+// ── Chart helpers (air-quality style) ────────────────────────────
+const CHART_GRID   = '#374151'
+const CHART_TICK   = '#9ca3af'
+const CHART_BG     = '#0d1117'
+
+function chartSetup(canvas, W, H) {
+  const dpr = window.devicePixelRatio || 1
+  canvas.width = W*dpr; canvas.height = H*dpr
+  canvas.style.width = W+'px'; canvas.style.height = H+'px'
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+  return ctx
+}
+
+function drawGrid(ctx, pad, W, H, ticks=[0,25,50,75,100]) {
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b
+  ctx.font='10px Space Mono, monospace'; ctx.textAlign='right'
+  ticks.forEach(v=>{
+    const y=pad.t+cH-(v/(ticks[ticks.length-1]||100))*cH
+    ctx.strokeStyle=CHART_GRID; ctx.lineWidth=1
+    ctx.setLineDash([3,3])
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke()
+    ctx.setLineDash([])
+    ctx.fillStyle=CHART_TICK; ctx.fillText(v,pad.l-5,y+4)
+  })
+}
+
+// Smooth monotone bezier curve
+function smoothLine(ctx, pts) {
+  if (!pts.length) return
+  ctx.moveTo(pts[0].x, pts[0].y)
+  for (let i=1; i<pts.length; i++) {
+    const xc=(pts[i-1].x+pts[i].x)/2
+    ctx.bezierCurveTo(xc, pts[i-1].y, xc, pts[i].y, pts[i].x, pts[i].y)
+  }
+}
+
+// ── Trend Chart (air-quality style) ──────────────────────────────
 function renderChart(history, view='7d') {
   const canvas=document.getElementById('trend-chart')
   if (!canvas) return
-  const dpr=window.devicePixelRatio||1
-  const W=canvas.parentElement.clientWidth-40
-  const H=160
-  canvas.width=W*dpr; canvas.height=H*dpr
-  canvas.style.width=W+'px'; canvas.style.height=H+'px'
-  const ctx=canvas.getContext('2d')
-  ctx.scale(dpr,dpr)
+  const W=canvas.parentElement.clientWidth-40, H=180
+  const ctx=chartSetup(canvas,W,H)
 
-  // padding: left for Y labels, bottom for X labels
   const pad={t:10,b:28,l:36,r:12}
   const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b
 
-  // Background
-  ctx.fillStyle='transparent'
+  // Chart area background
+  ctx.fillStyle=CHART_BG
+  ctx.fillRect(pad.l,pad.t,cW,cH)
 
-  // Y axis labels + grid
-  ctx.font=`${10*dpr/dpr}px Space Mono, monospace`
-  ctx.textAlign='right'
-  ;[0,25,50,75,100].forEach(v=>{
-    const y=pad.t+cH-(v/100)*cH
-    ctx.strokeStyle='#222'; ctx.lineWidth=1
-    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke()
-    ctx.fillStyle='#555'; ctx.fillText(v,pad.l-5,y+4)
-  })
+  drawGrid(ctx, pad, W, H)
 
-  // determine data based on view
+  // determine data
   let readData = (history.readiness||[]).slice(-7)
   let sleepData= (history.sleep||[]).slice(-7)
   let hrvData  = (history.sleepRaws||[]).slice(-7)
@@ -1169,7 +1193,7 @@ function renderChart(history, view='7d') {
   const n=Math.max(readData.length,sleepData.length,1)
 
   // X axis labels
-  ctx.fillStyle='#555'; ctx.textAlign='center'
+  ctx.fillStyle=CHART_TICK; ctx.textAlign='center'; ctx.font='10px Space Mono, monospace'
   const xStep=Math.ceil(n/6)
   readData.forEach((d,i)=>{
     if (i%xStep!==0 && i!==n-1) return
@@ -1183,28 +1207,35 @@ function renderChart(history, view='7d') {
     }
   })
 
-  // Draw series
-  const drawLine=(data,color,yFn)=>{
+  // Draw smooth series (no dots)
+  const drawSeries=(data,color,yFn)=>{
     if (!data?.length) return
+    const pts=data.map((d,i)=>({
+      x: pad.l+(i/Math.max(data.length-1,1))*cW,
+      y: pad.t+cH-Math.min(100,Math.max(0,yFn(d)))/100*cH
+    }))
+    // subtle fill under line
+    ctx.beginPath()
+    smoothLine(ctx,pts)
+    ctx.lineTo(pts[pts.length-1].x, pad.t+cH)
+    ctx.lineTo(pts[0].x, pad.t+cH)
+    ctx.closePath()
+    ctx.fillStyle=color+'18'
+    ctx.fill()
+    // line
     ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2
     ctx.lineJoin='round'; ctx.lineCap='round'
-    data.forEach((d,i)=>{
-      const x=pad.l+(i/Math.max(data.length-1,1))*cW
-      const y=pad.t+cH-yFn(d)/100*cH
-      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)
-    })
+    smoothLine(ctx,pts)
     ctx.stroke()
-    ctx.fillStyle=color
-    data.forEach((d,i)=>{
-      const x=pad.l+(i/Math.max(data.length-1,1))*cW
-      const y=pad.t+cH-yFn(d)/100*cH
-      ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill()
-    })
+    // endpoint dot only
+    const last=pts[pts.length-1]
+    ctx.beginPath(); ctx.arc(last.x,last.y,3,0,Math.PI*2)
+    ctx.fillStyle=color; ctx.fill()
   }
 
-  drawLine(readData,'#35f18a', d=>Math.min(100,Math.max(0,d.score??0)))
-  drawLine(sleepData,'#c8f135',d=>Math.min(100,Math.max(0,d.score??0)))
-  drawLine(hrvData,  '#38bdf8',d=>Math.min(100,Math.max(0,d.average_hrv??0)))
+  drawSeries(readData,'#35f18a', d=>d.score??0)
+  drawSeries(sleepData,'#c8f135',d=>d.score??0)
+  drawSeries(hrvData,  '#38bdf8',d=>d.average_hrv??0)
 }
 
 async function setChartView(view, el) {
@@ -1332,28 +1363,48 @@ function renderMET(activity) {
   canvas.style.display = 'block'
 
   const items = met.items
-  const dpr   = window.devicePixelRatio || 1
-  const W     = canvas.parentElement.clientWidth
-  const H     = 80
-  canvas.width = W*dpr; canvas.height = H*dpr
-  canvas.style.width = W+'px'; canvas.style.height = H+'px'
-  const ctx   = canvas.getContext('2d')
-  ctx.scale(dpr, dpr)
+  const W = canvas.parentElement.clientWidth, H = 90
+  const ctx = chartSetup(canvas, W, H)
+  const pad = { t: 6, b: 20, l: 28, r: 8 }
+  const cW = W-pad.l-pad.r, cH = H-pad.t-pad.b
 
-  const maxMET = Math.max(...items.filter(Boolean), 1)
-  const bw = W / items.length
+  // background
+  ctx.fillStyle = CHART_BG; ctx.fillRect(pad.l, pad.t, cW, cH)
+
+  const maxMET = Math.max(...items.filter(Boolean), 6)
+  const bw = cW / items.length
 
   items.forEach((v, i) => {
-    if (v == null) return
-    const h = (v / maxMET) * H
-    // color by MET zone
-    let color = '#222'
-    if (v >= 6)   color = '#ff5c35'
+    if (!v || v < 0.5) return
+    const h = (v / maxMET) * cH
+    let color = '#374151'
+    if (v >= 6)    color = '#ff5c35'
     else if (v >= 3) color = '#c8f135'
     else if (v >= 1.5) color = '#38bdf8'
     ctx.fillStyle = color
-    ctx.fillRect(i * bw, H - h, Math.max(bw - 0.5, 1), h)
+    ctx.fillRect(pad.l + i*bw, pad.t+cH-h, Math.max(bw-0.5,1), h)
   })
+
+  // dashed grid line at MET 3 and 6
+  ctx.font = '9px Space Mono, monospace'; ctx.textAlign = 'right'
+  ;[3, 6].forEach(v => {
+    const y = pad.t + cH - (v/maxMET)*cH
+    ctx.strokeStyle = CHART_GRID; ctx.lineWidth = 1; ctx.setLineDash([3,3])
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke()
+    ctx.setLineDash([])
+    ctx.fillStyle = CHART_TICK; ctx.fillText(v, pad.l-3, y+3)
+  })
+
+  // X axis: hour labels
+  const tStart = new Date(met.timestamp).getTime()
+  const tEnd   = tStart + items.length * (met.interval||60) * 1000
+  ctx.fillStyle = CHART_TICK; ctx.textAlign = 'center'; ctx.font = '9px Space Mono, monospace'
+  const h0 = new Date(tStart); h0.setMinutes(0,0,0); h0.setHours(h0.getHours()+1)
+  for (let h=new Date(h0); h.getTime()<=tEnd; h.setHours(h.getHours()+3)) {
+    const x = pad.l + ((h.getTime()-tStart)/(tEnd-tStart))*cW
+    if (x<pad.l||x>W-pad.r) continue
+    ctx.fillText(h.toLocaleTimeString('th-TH',{hour:'2-digit',hour12:false}), x, H-4)
+  }
 }
 
 // ── Render: Daily Status (SpO2 + Stress + Resilience + SleepTime) ─
@@ -1530,13 +1581,9 @@ function renderStressChart(hrTimeline, sleep) {
   `
 
   // ── Draw Canvas ───────────────────────────────────────────────
-  const dpr = window.devicePixelRatio || 1
-  const W   = canvas.parentElement.clientWidth - 40
-  const H   = 130
-  canvas.width = W * dpr; canvas.height = H * dpr
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px'
-  const ctx = canvas.getContext('2d')
-  ctx.scale(dpr, dpr)
+  const W = canvas.parentElement.clientWidth - 40
+  const H = 130
+  const ctx = chartSetup(canvas, W, H)
 
   const pad = { t: 8, b: 28, l: 36, r: 12 }
   const cW  = W - pad.l - pad.r
@@ -1549,60 +1596,57 @@ function renderStressChart(hrTimeline, sleep) {
   const xOf = t  => pad.l + ((t.getTime() - tStart) / tRange) * cW
   const yOf = s  => pad.t + cH - (Math.min(100, s) / 100) * cH
 
-  // Grid lines Y
-  ctx.font = '10px Space Mono, monospace'
-  ctx.textAlign = 'right'
+  // Chart area background
+  ctx.fillStyle = CHART_BG
+  ctx.fillRect(pad.l, pad.t, cW, cH)
+
+  // Grid + Y labels (dashed, air-quality style)
+  ctx.font = '10px Space Mono, monospace'; ctx.textAlign = 'right'
   ;[0, 50, 100].forEach(v => {
     const y = yOf(v)
-    ctx.strokeStyle = '#222'; ctx.lineWidth = 1
+    ctx.strokeStyle = CHART_GRID; ctx.lineWidth = 1
+    ctx.setLineDash([3, 3])
     ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke()
-    ctx.fillStyle = '#555'; ctx.fillText(v, pad.l - 4, y + 4)
+    ctx.setLineDash([])
+    ctx.fillStyle = CHART_TICK; ctx.fillText(v, pad.l - 4, y + 4)
   })
 
-  // Zone bands (low/mid/high)
-  ctx.fillStyle = '#35f18a10'
-  ctx.fillRect(pad.l, yOf(30), cW, yOf(0) - yOf(30))
-  ctx.fillStyle = '#ffaa0010'
-  ctx.fillRect(pad.l, yOf(60), cW, yOf(30) - yOf(60))
-  ctx.fillStyle = '#ff5c3510'
-  ctx.fillRect(pad.l, yOf(100), cW, yOf(60) - yOf(100))
+  // Zone bands
+  ctx.fillStyle = '#35f18a0a'; ctx.fillRect(pad.l, yOf(30), cW, yOf(0)-yOf(30))
+  ctx.fillStyle = '#ffaa000a'; ctx.fillRect(pad.l, yOf(60), cW, yOf(30)-yOf(60))
+  ctx.fillStyle = '#ff5c350a'; ctx.fillRect(pad.l, yOf(100), cW, yOf(60)-yOf(100))
 
-  // Filled area
+  // Smooth filled area
   const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + cH)
-  grad.addColorStop(0,   '#ff5c3560')
-  grad.addColorStop(0.4, '#ffaa0040')
-  grad.addColorStop(0.7, '#c8f13530')
-  grad.addColorStop(1,   '#35f18a10')
+  grad.addColorStop(0,   '#ff5c3550')
+  grad.addColorStop(0.4, '#ffaa0035')
+  grad.addColorStop(0.7, '#c8f13520')
+  grad.addColorStop(1,   '#35f18a08')
+  const stressedPts = stressed.map(p => ({ x: xOf(p.t), y: yOf(p.stress) }))
   ctx.beginPath()
-  ctx.moveTo(xOf(points[0].t), yOf(0))
-  stressed.forEach(p => ctx.lineTo(xOf(p.t), yOf(p.stress)))
-  ctx.lineTo(xOf(points[points.length - 1].t), yOf(0))
+  ctx.moveTo(stressedPts[0].x, yOf(0))
+  stressedPts.forEach(pt => ctx.lineTo(pt.x, pt.y))
+  ctx.lineTo(stressedPts[stressedPts.length-1].x, yOf(0))
   ctx.closePath()
-  ctx.fillStyle = grad
-  ctx.fill()
+  ctx.fillStyle = grad; ctx.fill()
 
-  // Stress line
+  // Smooth stress line
   ctx.beginPath(); ctx.strokeStyle = '#c8f135'; ctx.lineWidth = 2
   ctx.lineJoin = 'round'; ctx.lineCap = 'round'
-  stressed.forEach((p, i) => {
-    const x = xOf(p.t), y = yOf(p.stress)
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-  })
+  smoothLine(ctx, stressedPts)
   ctx.stroke()
 
   // Peak marker
-  ctx.beginPath()
-  ctx.arc(xOf(peak.t), yOf(peak.stress), 4, 0, Math.PI * 2)
+  ctx.beginPath(); ctx.arc(xOf(peak.t), yOf(peak.stress), 4, 0, Math.PI*2)
   ctx.fillStyle = '#ff5c35'; ctx.fill()
 
   // X axis time labels
-  ctx.fillStyle = '#555'; ctx.textAlign = 'center'
-  const t0 = new Date(tStart); t0.setMinutes(0, 0, 0); t0.setHours(t0.getHours() + 1)
-  for (let h = new Date(t0); h.getTime() <= tEnd; h.setHours(h.getHours() + 3)) {
-    const x = xOf(h)
-    if (x < pad.l + 10 || x > W - pad.r - 10) continue
-    const label = h.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })
-    ctx.fillText(label, x, H - 6)
+  ctx.fillStyle = CHART_TICK; ctx.textAlign = 'center'; ctx.font = '10px Space Mono, monospace'
+  const t0 = new Date(tStart); t0.setMinutes(0,0,0); t0.setHours(t0.getHours()+1)
+  for (let h=new Date(t0); h.getTime()<=tEnd; h.setHours(h.getHours()+3)) {
+    const x=xOf(h)
+    if (x<pad.l+10||x>W-pad.r-10) continue
+    ctx.fillText(h.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}),x,H-6)
   }
 }
 

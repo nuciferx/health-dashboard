@@ -542,14 +542,18 @@
       <div id="sleep-stages">
         <div class="skeleton" style="height:100px"></div>
       </div>
-      <canvas id="hypnogram-chart" style="width:100%;display:block;margin-top:.75rem"></canvas>
-      <canvas id="sleep-hr-chart" style="width:100%;display:block;margin-top:.5rem"></canvas>
-      <div id="sleep-hr-legend" style="display:flex;gap:1rem;margin-top:.4rem;font-size:.62rem;color:var(--muted)">
-        <span><span style="display:inline-block;width:10px;height:2px;background:#6366f1;vertical-align:middle;margin-right:3px"></span>Deep</span>
-        <span><span style="display:inline-block;width:10px;height:2px;background:#a78bfa;vertical-align:middle;margin-right:3px"></span>REM</span>
-        <span><span style="display:inline-block;width:10px;height:2px;background:#38bdf8;vertical-align:middle;margin-right:3px"></span>Light</span>
-        <span><span style="display:inline-block;width:10px;height:2px;background:#555;vertical-align:middle;margin-right:3px"></span>Awake</span>
-        <span style="margin-left:auto"><span style="display:inline-block;width:10px;height:2px;background:#ff5c35;vertical-align:middle;margin-right:3px"></span>HR</span>
+    </div>
+
+    <!-- Sleep HR Chart -->
+    <div class="section-title">HEART RATE ระหว่างนอน</div>
+    <div class="chart-card">
+      <canvas id="hypnogram-chart" style="width:100%;display:block"></canvas>
+      <div id="sleep-hr-legend" style="display:flex;gap:1rem;margin-top:.5rem;font-size:.62rem;color:var(--muted);flex-wrap:wrap">
+        <span><span style="display:inline-block;width:10px;height:3px;background:#6366f1;vertical-align:middle;margin-right:3px;border-radius:2px"></span>Deep</span>
+        <span><span style="display:inline-block;width:10px;height:3px;background:#a78bfa;vertical-align:middle;margin-right:3px;border-radius:2px"></span>REM</span>
+        <span><span style="display:inline-block;width:10px;height:3px;background:#38bdf8;vertical-align:middle;margin-right:3px;border-radius:2px"></span>Light</span>
+        <span><span style="display:inline-block;width:10px;height:3px;background:#374151;vertical-align:middle;margin-right:3px;border-radius:2px"></span>Awake</span>
+        <span style="margin-left:auto"><span style="display:inline-block;width:10px;height:2px;background:#ff5c35;vertical-align:middle;margin-right:3px"></span>HR (bpm)</span>
       </div>
     </div>
 
@@ -1292,66 +1296,125 @@ function saveHistory(oura,garmin) {
   store(SK.HIST,updated)
 }
 
-// ── Render: Hypnogram ────────────────────────────────────────────
+// ── Render: Sleep Phase + HR Chart ───────────────────────────────
 function renderHypnogram(sleep) {
   const canvas = document.getElementById('hypnogram-chart')
-  const legend = document.getElementById('sleep-hr-legend')
   if (!canvas) return
   const phases = sleep?.sleep_phase_5_min || ''
   const hrObj  = sleep?.heart_rate || null
   if (!phases) { canvas.style.display='none'; return }
   canvas.style.display = 'block'
 
-  const dpr = window.devicePixelRatio || 1
+  const pad = { t: 8, b: 24, l: 44, r: 48 }
   const W   = canvas.parentElement.clientWidth
-  const H   = 64
-  canvas.width = W*dpr; canvas.height = H*dpr
-  canvas.style.width = W+'px'; canvas.style.height = H+'px'
-  const ctx = canvas.getContext('2d')
-  ctx.scale(dpr, dpr)
+  const H   = 160
+  const ctx = chartSetup(canvas, W, H)
+  const cW  = W - pad.l - pad.r
+  const cH  = H - pad.t - pad.b
 
-  const n    = phases.length
-  const bw   = W / n
-  // phase → y position (0=top=awake, 1=light, 2=REM, 3=deep=bottom)
-  const phaseMap = { '4':0, '2':1, '3':2, '1':3 }
-  const phaseColor = { '1':'#6366f1','3':'#a78bfa','2':'#38bdf8','4':'#444' }
-  const bands = 4, bandH = H / bands
+  // Chart area background
+  ctx.fillStyle = CHART_BG; ctx.fillRect(pad.l, pad.t, cW, cH)
+
+  // ── Sleep phases (bottom 40% of chart) ────────────────────────
+  const phaseH   = cH * 0.42
+  const phaseTop = pad.t + cH - phaseH
+  const n   = phases.length
+  const bw  = cW / n
+  // phase → row from bottom: deep=0, rem=1, light=2, awake=3
+  const phaseRow   = { '1':0, '3':1, '2':2, '4':3 }
+  const phaseColor = { '1':'#6366f1', '3':'#a78bfa', '2':'#38bdf8', '4':'#374151' }
+  const rowH = phaseH / 4
 
   for (let i = 0; i < n; i++) {
-    const ch = phases[i]
-    const row = phaseMap[ch] ?? 1
-    const y   = row * bandH
+    const ch  = phases[i]
+    const row = phaseRow[ch] ?? 2
+    const y   = phaseTop + (3 - row) * rowH
     ctx.fillStyle = phaseColor[ch] || '#333'
-    ctx.fillRect(i * bw, y, Math.max(bw - 0.5, 1), bandH)
+    ctx.fillRect(pad.l + i*bw, y, Math.max(bw-0.3, 1), rowH+0.5)
   }
 
-  // Overlay sleep HR as line if available
+  // Phase Y labels (left side)
+  ctx.font = '9px Space Mono, monospace'; ctx.fillStyle = CHART_TICK; ctx.textAlign = 'right'
+  ;['Deep','REM','Light','Awake'].forEach((l, i) => {
+    const y = phaseTop + i*rowH + rowH*0.65
+    ctx.fillText(l, pad.l - 4, y)
+  })
+
+  // Divider line between phase and HR
+  ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 1; ctx.setLineDash([])
+  ctx.beginPath(); ctx.moveTo(pad.l, phaseTop-1); ctx.lineTo(W-pad.r, phaseTop-1); ctx.stroke()
+
+  // ── HR line (top 58% of chart) ────────────────────────────────
+  const hrAreaH   = cH - phaseH - 4
+  const hrAreaTop = pad.t
+
   if (hrObj?.items?.length) {
-    const items = hrObj.items
-    const tStart = new Date(hrObj.timestamp).getTime()
+    const items    = hrObj.items
     const interval = (hrObj.interval || 300) * 1000
-    const validHR = items.filter(v => v != null)
+    const validHR  = items.filter(v => v != null)
+
     if (validHR.length) {
-      const minHR = Math.min(...validHR), maxHR = Math.max(...validHR)
-      const rangeHR = maxHR - minHR || 1
-      ctx.beginPath(); ctx.strokeStyle = '#ff5c35cc'; ctx.lineWidth = 1.5
-      ctx.lineJoin = 'round'
-      let first = true
-      items.forEach((v, i) => {
-        if (v == null) return
-        const t = tStart + i * interval
-        const totalDur = n * 5 * 60 * 1000
-        const x = ((t - tStart) / totalDur) * W
-        const y = H - ((v - minHR) / rangeHR) * H * 0.7 - H * 0.1
-        if (first) { ctx.moveTo(x, y); first = false } else ctx.lineTo(x, y)
+      const minHR  = Math.min(...validHR) - 2
+      const maxHR  = Math.max(...validHR) + 2
+      const rangeHR= maxHR - minHR || 1
+      const totalMs= items.length * interval
+
+      const xOfIdx = i  => pad.l + (i / items.length) * cW
+      const yOfHR  = v  => hrAreaTop + hrAreaH - ((v - minHR) / rangeHR) * hrAreaH
+
+      // dashed grid for HR
+      ctx.font = '9px Space Mono, monospace'; ctx.textAlign = 'right'
+      const hrTicks = [minHR+2, Math.round((minHR+maxHR)/2), maxHR-2].map(Math.round)
+      hrTicks.forEach(v => {
+        const y = yOfHR(v)
+        if (y < hrAreaTop || y > hrAreaTop+hrAreaH) return
+        ctx.strokeStyle = CHART_GRID; ctx.lineWidth=1; ctx.setLineDash([3,3])
+        ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke()
+        ctx.setLineDash([])
+        ctx.fillStyle = CHART_TICK; ctx.fillText(v, pad.l-4, y+3)
+        // right axis label (bpm)
+        ctx.textAlign='left'; ctx.fillText('bpm', W-pad.r+4, y+3); ctx.textAlign='right'
       })
+
+      // smooth HR line
+      const hrPts = items
+        .map((v, i) => v != null ? { x: xOfIdx(i), y: yOfHR(v) } : null)
+        .filter(Boolean)
+
+      // fill under HR line
+      ctx.beginPath()
+      ctx.moveTo(hrPts[0].x, hrAreaTop+hrAreaH)
+      hrPts.forEach(p => ctx.lineTo(p.x, p.y))
+      ctx.lineTo(hrPts[hrPts.length-1].x, hrAreaTop+hrAreaH)
+      ctx.closePath()
+      ctx.fillStyle = '#ff5c3518'; ctx.fill()
+
+      // line
+      ctx.beginPath(); ctx.strokeStyle = '#ff5c35'; ctx.lineWidth = 2
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round'
+      smoothLine(ctx, hrPts)
       ctx.stroke()
     }
+  } else {
+    // no HR: show placeholder text
+    ctx.font = '11px Noto Sans Thai, sans-serif'
+    ctx.fillStyle = '#374151'; ctx.textAlign = 'center'
+    ctx.fillText('ไม่มีข้อมูล HR', W/2, hrAreaTop + hrAreaH/2)
   }
 
-  // Y labels
-  ctx.font = `9px Space Mono, monospace`; ctx.fillStyle = '#444'; ctx.textAlign = 'left'
-  ;['Awake','Light','REM','Deep'].forEach((l,i) => ctx.fillText(l, 2, i*bandH + bandH*0.7))
+  // ── X axis: เวลา ──────────────────────────────────────────────
+  const tStart = sleep?.bedtime_start ? new Date(sleep.bedtime_start).getTime() : null
+  const tEnd   = sleep?.bedtime_end   ? new Date(sleep.bedtime_end).getTime()   : null
+  if (tStart && tEnd) {
+    ctx.fillStyle = CHART_TICK; ctx.textAlign = 'center'; ctx.font = '9px Space Mono, monospace'
+    const tRange = tEnd - tStart
+    const h0 = new Date(tStart); h0.setMinutes(0,0,0); h0.setHours(h0.getHours()+1)
+    for (let h=new Date(h0); h.getTime()<=tEnd; h.setHours(h.getHours()+2)) {
+      const x = pad.l + ((h.getTime()-tStart)/tRange)*cW
+      if (x < pad.l+10 || x > W-pad.r-10) continue
+      ctx.fillText(h.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}), x, H-6)
+    }
+  }
 }
 
 // ── Render: MET Activity Timeline ────────────────────────────────

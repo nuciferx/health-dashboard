@@ -227,6 +227,12 @@
     .sleep-hours-big  { font-family: 'Bebas Neue', cursive; font-size: 3rem; line-height: 1; }
     .sleep-hours-unit { font-size: .75rem; color: var(--muted); }
 
+    /* stress summary chips */
+    .stress-chip { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: .45rem .75rem; text-align: center; min-width: 80px; }
+    .stress-chip-label { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+    .stress-chip-val { font-family: 'Bebas Neue', cursive; font-size: 1.5rem; line-height: 1.1; }
+    .stress-chip-sub { font-size: .62rem; color: var(--muted); }
+
     /* horizontal stage bars */
     .stage-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .45rem; }
     .stage-name { font-size: .7rem; color: var(--muted); width: 36px; flex-shrink: 0; text-align: right; }
@@ -393,6 +399,16 @@
     .data-insight-title { font-size: .68rem; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; }
     .data-insight-row  { font-size: .82rem; color: var(--text); line-height: 1.9; }
 
+    /* ── Daily status chips ──────────────────────────────── */
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .status-item { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .75rem; }
+    .status-item-label { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: .2rem; }
+    .status-item-val { font-family: 'Bebas Neue', cursive; font-size: 1.4rem; line-height: 1.1; }
+    .status-item-sub { font-size: .68rem; color: var(--muted); }
+    .status-bar-wrap { background: var(--bg); border-radius: 3px; height: 6px; margin-top: .4rem; overflow: hidden; }
+    .status-bar-fill { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.22,1,.36,1); }
+    .day-summary-badge { display: inline-block; padding: .25rem .75rem; border-radius: 20px; font-size: .72rem; font-weight: 600; margin-bottom: .65rem; }
+
     /* ── Misc ────────────────────────────────────────── */
     .spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .75s linear infinite; margin: 0 auto; }
     @keyframes spin { to{transform:rotate(360deg)} }
@@ -526,6 +542,15 @@
       <div id="sleep-stages">
         <div class="skeleton" style="height:100px"></div>
       </div>
+      <canvas id="hypnogram-chart" style="width:100%;display:block;margin-top:.75rem"></canvas>
+      <canvas id="sleep-hr-chart" style="width:100%;display:block;margin-top:.5rem"></canvas>
+      <div id="sleep-hr-legend" style="display:flex;gap:1rem;margin-top:.4rem;font-size:.62rem;color:var(--muted)">
+        <span><span style="display:inline-block;width:10px;height:2px;background:#6366f1;vertical-align:middle;margin-right:3px"></span>Deep</span>
+        <span><span style="display:inline-block;width:10px;height:2px;background:#a78bfa;vertical-align:middle;margin-right:3px"></span>REM</span>
+        <span><span style="display:inline-block;width:10px;height:2px;background:#38bdf8;vertical-align:middle;margin-right:3px"></span>Light</span>
+        <span><span style="display:inline-block;width:10px;height:2px;background:#555;vertical-align:middle;margin-right:3px"></span>Awake</span>
+        <span style="margin-left:auto"><span style="display:inline-block;width:10px;height:2px;background:#ff5c35;vertical-align:middle;margin-right:3px"></span>HR</span>
+      </div>
     </div>
 
     <!-- Metrics row -->
@@ -535,6 +560,38 @@
       <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
       <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
       <div class="mcard"><div class="skeleton" style="height:56px"></div></div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:1.25rem">
+      <canvas id="met-chart" style="width:100%;display:block"></canvas>
+      <div style="margin-top:.4rem;font-size:.62rem;color:var(--muted);display:flex;gap:1rem">
+        <span><span style="display:inline-block;width:8px;height:8px;background:#222;border-radius:2px;vertical-align:middle;margin-right:3px"></span>พัก</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:#38bdf8;border-radius:2px;vertical-align:middle;margin-right:3px"></span>เบา</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:#c8f135;border-radius:2px;vertical-align:middle;margin-right:3px"></span>ปานกลาง</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:#ff5c35;border-radius:2px;vertical-align:middle;margin-right:3px"></span>หนัก</span>
+      </div>
+    </div>
+
+    <!-- Stress Estimate -->
+    <div class="section-title">STRESS ESTIMATE</div>
+    <div class="chart-card" id="stress-section">
+      <div id="stress-summary" style="display:flex;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap"></div>
+      <canvas id="stress-chart" style="width:100%;display:block"></canvas>
+      <div style="margin-top:.5rem;font-size:.65rem;color:var(--muted)">
+        ประมาณการจาก HR elevation × HRV factor — ไม่รวมช่วงออกกำลังกาย
+      </div>
+    </div>
+
+    <!-- Daily Status -->
+    <div class="section-title">DAILY STATUS</div>
+    <div class="card" style="margin-bottom:1.25rem" id="daily-status-card">
+      <div class="skeleton" style="height:80px"></div>
+    </div>
+
+    <!-- Workout -->
+    <div id="workout-section" style="display:none">
+      <div class="section-title">WORKOUT</div>
+      <div class="card" style="margin-bottom:1.25rem" id="workout-card"></div>
     </div>
 
     <!-- Trend Chart -->
@@ -846,11 +903,19 @@ async function ouraFetch(path,params={}) {
 async function fetchOura() {
   const today=todayStr(), from7=daysAgoStr(7)
   const p={start_date:from7,end_date:today}
-  const [dailySleepR,sleepR,readyR,actR] = await Promise.all([
+  const p1={start_date:today,end_date:today}
+  const pHR={start_datetime:today+'T00:00:00',end_datetime:today+'T23:59:59'}
+  const [dailySleepR,sleepR,readyR,actR,hrR,spo2R,stressR,resilR,workoutR,sleepTimeR] = await Promise.all([
     ouraFetch('/usercollection/daily_sleep',p),
     ouraFetch('/usercollection/sleep',p),
     ouraFetch('/usercollection/daily_readiness',p),
     ouraFetch('/usercollection/daily_activity',p),
+    ouraFetch('/usercollection/heartrate',pHR).catch(()=>({data:[]})),
+    ouraFetch('/usercollection/daily_spo2',p1).catch(()=>({data:[]})),
+    ouraFetch('/usercollection/daily_stress',p1).catch(()=>({data:[]})),
+    ouraFetch('/usercollection/daily_resilience',p1).catch(()=>({data:[]})),
+    ouraFetch('/usercollection/workout',p1).catch(()=>({data:[]})),
+    ouraFetch('/usercollection/sleep_time',p1).catch(()=>({data:[]})),
   ])
   const dailySleep=dailySleepR.data?.at(-1)||{}
   const sleepRaw  =sleepR.data?.at(-1)||{}
@@ -860,6 +925,12 @@ async function fetchOura() {
   return {
     sleep, ready, activity,
     heartrate: sleepRaw.lowest_heart_rate??null,
+    hrTimeline: hrR.data||[],
+    spo2:      spo2R.data?.at(-1)||null,
+    stress:    stressR.data?.at(-1)||null,
+    resilience:resilR.data?.at(-1)||null,
+    workouts:  workoutR.data||[],
+    sleepTime: sleepTimeR.data?.at(-1)||null,
     history: { sleep:dailySleepR.data||[], readiness:readyR.data||[], sleepRaws:sleepR.data||[] },
   }
 }
@@ -1190,6 +1261,351 @@ function saveHistory(oura,garmin) {
   store(SK.HIST,updated)
 }
 
+// ── Render: Hypnogram ────────────────────────────────────────────
+function renderHypnogram(sleep) {
+  const canvas = document.getElementById('hypnogram-chart')
+  const legend = document.getElementById('sleep-hr-legend')
+  if (!canvas) return
+  const phases = sleep?.sleep_phase_5_min || ''
+  const hrObj  = sleep?.heart_rate || null
+  if (!phases) { canvas.style.display='none'; return }
+  canvas.style.display = 'block'
+
+  const dpr = window.devicePixelRatio || 1
+  const W   = canvas.parentElement.clientWidth
+  const H   = 64
+  canvas.width = W*dpr; canvas.height = H*dpr
+  canvas.style.width = W+'px'; canvas.style.height = H+'px'
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+
+  const n    = phases.length
+  const bw   = W / n
+  // phase → y position (0=top=awake, 1=light, 2=REM, 3=deep=bottom)
+  const phaseMap = { '4':0, '2':1, '3':2, '1':3 }
+  const phaseColor = { '1':'#6366f1','3':'#a78bfa','2':'#38bdf8','4':'#444' }
+  const bands = 4, bandH = H / bands
+
+  for (let i = 0; i < n; i++) {
+    const ch = phases[i]
+    const row = phaseMap[ch] ?? 1
+    const y   = row * bandH
+    ctx.fillStyle = phaseColor[ch] || '#333'
+    ctx.fillRect(i * bw, y, Math.max(bw - 0.5, 1), bandH)
+  }
+
+  // Overlay sleep HR as line if available
+  if (hrObj?.items?.length) {
+    const items = hrObj.items
+    const tStart = new Date(hrObj.timestamp).getTime()
+    const interval = (hrObj.interval || 300) * 1000
+    const validHR = items.filter(v => v != null)
+    if (validHR.length) {
+      const minHR = Math.min(...validHR), maxHR = Math.max(...validHR)
+      const rangeHR = maxHR - minHR || 1
+      ctx.beginPath(); ctx.strokeStyle = '#ff5c35cc'; ctx.lineWidth = 1.5
+      ctx.lineJoin = 'round'
+      let first = true
+      items.forEach((v, i) => {
+        if (v == null) return
+        const t = tStart + i * interval
+        const totalDur = n * 5 * 60 * 1000
+        const x = ((t - tStart) / totalDur) * W
+        const y = H - ((v - minHR) / rangeHR) * H * 0.7 - H * 0.1
+        if (first) { ctx.moveTo(x, y); first = false } else ctx.lineTo(x, y)
+      })
+      ctx.stroke()
+    }
+  }
+
+  // Y labels
+  ctx.font = `9px Space Mono, monospace`; ctx.fillStyle = '#444'; ctx.textAlign = 'left'
+  ;['Awake','Light','REM','Deep'].forEach((l,i) => ctx.fillText(l, 2, i*bandH + bandH*0.7))
+}
+
+// ── Render: MET Activity Timeline ────────────────────────────────
+function renderMET(activity) {
+  const canvas = document.getElementById('met-chart')
+  if (!canvas) return
+  const met = activity?.met
+  if (!met?.items?.length) { canvas.style.display='none'; return }
+  canvas.style.display = 'block'
+
+  const items = met.items
+  const dpr   = window.devicePixelRatio || 1
+  const W     = canvas.parentElement.clientWidth
+  const H     = 80
+  canvas.width = W*dpr; canvas.height = H*dpr
+  canvas.style.width = W+'px'; canvas.style.height = H+'px'
+  const ctx   = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+
+  const maxMET = Math.max(...items.filter(Boolean), 1)
+  const bw = W / items.length
+
+  items.forEach((v, i) => {
+    if (v == null) return
+    const h = (v / maxMET) * H
+    // color by MET zone
+    let color = '#222'
+    if (v >= 6)   color = '#ff5c35'
+    else if (v >= 3) color = '#c8f135'
+    else if (v >= 1.5) color = '#38bdf8'
+    ctx.fillStyle = color
+    ctx.fillRect(i * bw, H - h, Math.max(bw - 0.5, 1), h)
+  })
+}
+
+// ── Render: Daily Status (SpO2 + Stress + Resilience + SleepTime) ─
+function renderDailyStatus(oura) {
+  const el = document.getElementById('daily-status-card')
+  if (!el) return
+  const { spo2, stress, resilience, sleepTime } = oura
+
+  // day_summary → badge
+  const summaryMap = {
+    restored: { label:'Restored', color:'var(--optimal)' },
+    normal:   { label:'Normal',   color:'var(--caution)' },
+    stressful:{ label:'Stressful',color:'var(--rest)' },
+  }
+  const sm = summaryMap[stress?.day_summary] || { label: stress?.day_summary||'—', color:'var(--muted)' }
+
+  const stressMax = 24*60 // max minutes in a day
+  const stressHigh    = stress?.stress_high ?? null
+  const recoveryHigh  = stress?.recovery_high ?? null
+  const daytimeRec    = resilience?.contributors?.daytime_recovery ?? null
+  const sleepRec      = resilience?.contributors?.sleep_recovery ?? null
+  const spo2avg       = spo2?.spo2_percentage?.average ?? null
+  const spo2Color     = spo2avg==null?'var(--muted)':spo2avg>=95?'var(--optimal)':spo2avg>=90?'var(--caution)':'var(--rest)'
+
+  // Sleep recommendation
+  let sleepRecHtml = ''
+  if (sleepTime?.recommendation) {
+    const opt = sleepTime.optimal_bedtime
+    const bedStart = opt?.start_offset != null
+      ? (() => { const d=new Date(); d.setHours(0,0,0,0); d.setSeconds(opt.start_offset); return d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}) })()
+      : null
+    const bedEnd = opt?.end_offset != null
+      ? (() => { const d=new Date(); d.setHours(0,0,0,0); d.setSeconds(opt.end_offset); return d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}) })()
+      : null
+    const rangeStr = (bedStart&&bedEnd) ? `${bedStart}–${bedEnd}` : '—'
+    sleepRecHtml = `
+      <div class="status-item" style="grid-column:1/-1">
+        <div class="status-item-label">เวลานอนที่แนะนำ</div>
+        <div style="display:flex;align-items:baseline;gap:.5rem">
+          <div class="status-item-val" style="color:var(--accent)">${rangeStr}</div>
+          <div class="status-item-sub">${sleepTime.recommendation||''}</div>
+        </div>
+      </div>`
+  }
+
+  el.innerHTML = `
+    ${stress?.day_summary ? `<div class="day-summary-badge" style="background:${sm.color}22;color:${sm.color};border:1px solid ${sm.color}44">${sm.label}</div>` : ''}
+    <div class="status-grid">
+      <div class="status-item">
+        <div class="status-item-label">SpO2</div>
+        <div class="status-item-val" style="color:${spo2Color}">${spo2avg!=null?spo2avg.toFixed(1)+'%':'—'}</div>
+        <div class="status-item-sub">ออกซิเจนในเลือด</div>
+      </div>
+      <div class="status-item">
+        <div class="status-item-label">Stress High</div>
+        <div class="status-item-val" style="color:var(--rest)">${stressHigh!=null?stressHigh+' min':'—'}</div>
+        <div class="status-item-sub">${recoveryHigh!=null?'Recovery '+recoveryHigh+' min':''}</div>
+        ${stressHigh!=null?`<div class="status-bar-wrap"><div class="status-bar-fill" style="width:${Math.min(100,(stressHigh/480)*100)}%;background:var(--rest)"></div></div>`:''}
+      </div>
+      <div class="status-item">
+        <div class="status-item-label">Daytime Recovery</div>
+        <div class="status-item-val" style="color:${daytimeRec!=null?(daytimeRec>=70?'var(--optimal)':daytimeRec>=40?'var(--caution)':'var(--rest)'):'var(--muted)'}">${daytimeRec??'—'}</div>
+        <div class="status-item-sub">Resilience (0–100)</div>
+        ${daytimeRec!=null?`<div class="status-bar-wrap"><div class="status-bar-fill" style="width:${daytimeRec}%;background:var(--optimal)"></div></div>`:''}
+      </div>
+      <div class="status-item">
+        <div class="status-item-label">Sleep Recovery</div>
+        <div class="status-item-val" style="color:${sleepRec!=null?(sleepRec>=70?'var(--optimal)':sleepRec>=40?'var(--caution)':'var(--rest)'):'var(--muted)'}">${sleepRec??'—'}</div>
+        <div class="status-item-sub">Resilience (0–100)</div>
+        ${sleepRec!=null?`<div class="status-bar-wrap"><div class="status-bar-fill" style="width:${sleepRec}%;background:var(--optimal)"></div></div>`:''}
+      </div>
+      ${sleepRecHtml}
+    </div>
+  `
+}
+
+// ── Render: Workout ───────────────────────────────────────────────
+function renderWorkout(workouts) {
+  const section = document.getElementById('workout-section')
+  const card    = document.getElementById('workout-card')
+  if (!section || !card) return
+  if (!workouts?.length) { section.style.display='none'; return }
+  section.style.display = 'block'
+  const intensityLabel = { easy:'เบา', moderate:'ปานกลาง', hard:'หนัก', rest:'พัก' }
+  card.innerHTML = workouts.map(w => {
+    const start = w.start_datetime ? new Date(w.start_datetime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'
+    const end   = w.end_datetime   ? new Date(w.end_datetime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}) : '—'
+    const distStr = w.distance ? `${(w.distance/1000).toFixed(1)} km` : ''
+    const calStr  = w.calories ? `${Math.round(w.calories)} kcal` : ''
+    const intColor = w.intensity==='hard'?'var(--rest)':w.intensity==='moderate'?'var(--caution)':'var(--optimal)'
+    return `<div style="margin-bottom:.5rem">
+      <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:1px;color:var(--accent)">${w.activity||'Workout'}</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem">
+        ${start}–${end}
+        ${distStr?`&nbsp;·&nbsp;📍 ${distStr}`:''}
+        ${calStr?`&nbsp;·&nbsp;🔥 ${calStr}`:''}
+        ${w.intensity?`&nbsp;·&nbsp;<span style="color:${intColor}">${intensityLabel[w.intensity]||w.intensity}</span>`:''}
+      </div>
+    </div>`
+  }).join('<div style="height:.5rem;border-top:1px solid var(--border);margin:.5rem 0"></div>')
+}
+
+// ── Render: Stress Estimate Chart ────────────────────────────────
+function renderStressChart(hrTimeline, sleep) {
+  const canvas = document.getElementById('stress-chart')
+  const summaryEl = document.getElementById('stress-summary')
+  if (!canvas || !summaryEl) return
+
+  const lowestHR = sleep?.lowest_heart_rate ?? null
+  const avgHRV   = sleep?.average_hrv ?? null
+
+  if (!hrTimeline?.length || !lowestHR) {
+    summaryEl.innerHTML = '<div style="font-size:.8rem;color:var(--muted)">ไม่มีข้อมูล HR วันนี้</div>'
+    canvas.style.display = 'none'
+    return
+  }
+
+  canvas.style.display = 'block'
+
+  // Filter: ไม่รวม active (ออกกำลังกาย) → วัดได้แม่นขึ้น
+  const points = hrTimeline
+    .filter(p => p.source !== 'active' && p.bpm > 0)
+    .map(p => ({ t: new Date(p.timestamp), bpm: p.bpm, source: p.source }))
+    .sort((a, b) => a.t - b.t)
+
+  if (!points.length) {
+    summaryEl.innerHTML = '<div style="font-size:.8rem;color:var(--muted)">ไม่มีข้อมูล HR (ไม่รวม active)</div>'
+    canvas.style.display = 'none'
+    return
+  }
+
+  // ── Algorithm ────────────────────────────────────────────────
+  // Method 2: HR elevation = bpm - baseline (lowest_heart_rate)
+  // Method 3: คูณ HRV factor → HRV ต่ำ = ร่างกายฟื้นน้อย = เครียดง่ายขึ้น
+  const hrBase   = lowestHR
+  const hrvFactor = avgHRV ? (50 / Math.max(15, avgHRV)) : 1.0  // HRV 50ms = neutral
+  const SCALE = 2.5  // 20bpm elevation × factor 1.0 = 50 stress
+
+  const stressed = points.map(p => {
+    const elev   = Math.max(0, p.bpm - hrBase)
+    const stress = Math.min(100, elev * hrvFactor * SCALE)
+    return { ...p, stress }
+  })
+
+  // ── Summary stats ─────────────────────────────────────────────
+  const avgStress  = stressed.reduce((s, p) => s + p.stress, 0) / stressed.length
+  const peak       = stressed.reduce((a, b) => a.stress > b.stress ? a : b)
+  const peakTime   = peak.t.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const stressLabel = avgStress < 30 ? 'ต่ำ' : avgStress < 60 ? 'ปานกลาง' : 'สูง'
+  const stressColor = avgStress < 30 ? 'var(--optimal)' : avgStress < 60 ? 'var(--caution)' : 'var(--rest)'
+  const hrvLabel    = avgHRV ? `${Math.round(avgHRV)} ms` : '—'
+
+  summaryEl.innerHTML = `
+    <div class="stress-chip">
+      <div class="stress-chip-label">Stress Avg</div>
+      <div class="stress-chip-val" style="color:${stressColor}">${Math.round(avgStress)}</div>
+      <div class="stress-chip-sub">${stressLabel}</div>
+    </div>
+    <div class="stress-chip">
+      <div class="stress-chip-label">Peak เวลา</div>
+      <div class="stress-chip-val" style="font-size:1.1rem;padding-top:.2rem">${peakTime}</div>
+      <div class="stress-chip-sub">${Math.round(peak.stress)} stress</div>
+    </div>
+    <div class="stress-chip">
+      <div class="stress-chip-label">HR Baseline</div>
+      <div class="stress-chip-val">${hrBase}</div>
+      <div class="stress-chip-sub">bpm (นอน)</div>
+    </div>
+    <div class="stress-chip">
+      <div class="stress-chip-label">HRV Baseline</div>
+      <div class="stress-chip-val">${Math.round(avgHRV ?? 0) || '—'}</div>
+      <div class="stress-chip-sub">${avgHRV ? `factor ×${hrvFactor.toFixed(2)}` : 'ไม่มีข้อมูล'}</div>
+    </div>
+  `
+
+  // ── Draw Canvas ───────────────────────────────────────────────
+  const dpr = window.devicePixelRatio || 1
+  const W   = canvas.parentElement.clientWidth - 40
+  const H   = 130
+  canvas.width = W * dpr; canvas.height = H * dpr
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px'
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+
+  const pad = { t: 8, b: 28, l: 36, r: 12 }
+  const cW  = W - pad.l - pad.r
+  const cH  = H - pad.t - pad.b
+
+  const tStart = points[0].t.getTime()
+  const tEnd   = points[points.length - 1].t.getTime()
+  const tRange = tEnd - tStart || 1
+
+  const xOf = t  => pad.l + ((t.getTime() - tStart) / tRange) * cW
+  const yOf = s  => pad.t + cH - (Math.min(100, s) / 100) * cH
+
+  // Grid lines Y
+  ctx.font = '10px Space Mono, monospace'
+  ctx.textAlign = 'right'
+  ;[0, 50, 100].forEach(v => {
+    const y = yOf(v)
+    ctx.strokeStyle = '#222'; ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke()
+    ctx.fillStyle = '#555'; ctx.fillText(v, pad.l - 4, y + 4)
+  })
+
+  // Zone bands (low/mid/high)
+  ctx.fillStyle = '#35f18a10'
+  ctx.fillRect(pad.l, yOf(30), cW, yOf(0) - yOf(30))
+  ctx.fillStyle = '#ffaa0010'
+  ctx.fillRect(pad.l, yOf(60), cW, yOf(30) - yOf(60))
+  ctx.fillStyle = '#ff5c3510'
+  ctx.fillRect(pad.l, yOf(100), cW, yOf(60) - yOf(100))
+
+  // Filled area
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + cH)
+  grad.addColorStop(0,   '#ff5c3560')
+  grad.addColorStop(0.4, '#ffaa0040')
+  grad.addColorStop(0.7, '#c8f13530')
+  grad.addColorStop(1,   '#35f18a10')
+  ctx.beginPath()
+  ctx.moveTo(xOf(points[0].t), yOf(0))
+  stressed.forEach(p => ctx.lineTo(xOf(p.t), yOf(p.stress)))
+  ctx.lineTo(xOf(points[points.length - 1].t), yOf(0))
+  ctx.closePath()
+  ctx.fillStyle = grad
+  ctx.fill()
+
+  // Stress line
+  ctx.beginPath(); ctx.strokeStyle = '#c8f135'; ctx.lineWidth = 2
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'
+  stressed.forEach((p, i) => {
+    const x = xOf(p.t), y = yOf(p.stress)
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  })
+  ctx.stroke()
+
+  // Peak marker
+  ctx.beginPath()
+  ctx.arc(xOf(peak.t), yOf(peak.stress), 4, 0, Math.PI * 2)
+  ctx.fillStyle = '#ff5c35'; ctx.fill()
+
+  // X axis time labels
+  ctx.fillStyle = '#555'; ctx.textAlign = 'center'
+  const t0 = new Date(tStart); t0.setMinutes(0, 0, 0); t0.setHours(t0.getHours() + 1)
+  for (let h = new Date(t0); h.getTime() <= tEnd; h.setHours(h.getHours() + 3)) {
+    const x = xOf(h)
+    if (x < pad.l + 10 || x > W - pad.r - 10) continue
+    const label = h.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })
+    ctx.fillText(label, x, H - 6)
+  }
+}
+
 // ── Main load ────────────────────────────────────────────────────
 async function loadDashboard() {
   document.getElementById('hdr-date').textContent=
@@ -1216,7 +1632,12 @@ async function loadDashboard() {
 
   renderVitals(ouraData,garminData)
   renderSleep(ouraData.sleep)
+  renderHypnogram(ouraData.sleep)
   renderActivity(ouraData,garminData)
+  renderMET(ouraData.activity)
+  renderStressChart(ouraData.hrTimeline, ouraData.sleep)
+  renderDailyStatus(ouraData)
+  renderWorkout(ouraData.workouts)
   renderGarmin(garminData)
   loadCommuteDisplay()
   setTimeout(()=>renderChart(ouraData.history,chartView),120)

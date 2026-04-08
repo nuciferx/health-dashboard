@@ -172,7 +172,15 @@ def get_sheet():
         raise RuntimeError("SHEET_ID not set.")
 
     gc = gspread.service_account_from_dict(sa_key)
-    ws = gc.open_by_key(sheet_id).sheet1
+    ss = gc.open_by_key(sheet_id)
+
+    # Use "Garmin" worksheet (create if not exists)
+    try:
+        ws = ss.worksheet("Garmin")
+    except gspread.WorksheetNotFound:
+        ws = ss.add_worksheet(title="Garmin", rows=2000, cols=20)
+        ws.append_row(HEADERS, value_input_option="USER_ENTERED")
+        log.info("สร้าง worksheet 'Garmin' แล้ว")
 
     if not ws.row_values(1):
         ws.append_row(HEADERS, value_input_option="USER_ENTERED")

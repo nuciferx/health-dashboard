@@ -70,18 +70,22 @@
 
 ## วิธีตั้งค่า Google Sheets สำหรับ Garmin
 
-1. สร้าง Google Sheet ใหม่
-2. ไปที่ **File → Share → Publish to web**
-3. เลือก sheet ที่ต้องการ → **Comma-separated values (.csv)** → Publish
-4. คัดลอก URL ที่ได้ (รูปแบบ: `https://docs.google.com/spreadsheets/d/.../gviz/tq?tqx=out:csv`)
-5. ใส่ใน `config.js`:
-   ```js
-   GARMIN_SHEET_URL: "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/gviz/tq?tqx=out:csv"
-   ```
-6. ตั้งค่า GitHub Secrets (Settings → Secrets and variables → Actions):
-   - `GARMIN_EMAIL`, `GARMIN_PASSWORD`
-   - `GCP_SA_KEY` — JSON ของ Google Service Account (ต้องมีสิทธิ์ edit sheet)
-   - `SHEET_ID` — ID จาก URL ของ sheet
+ใช้ sheet เดียวกับ air-quality (`1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y`) — script จะสร้าง tab "Garmin" ให้อัตโนมัติ
+
+1. เปิด Google Sheet: https://docs.google.com/spreadsheets/d/1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y
+2. ตรวจสอบว่า service account `nucifer-sheets-bot@nucifer-data-sheet-api.iam.gserviceaccount.com` มีสิทธิ์ Editor (น่าจะมีอยู่แล้วจาก air-quality)
+3. **Publish to web**: File → Share → Publish to web → เลือก tab "Garmin" → Comma-separated values (.csv) → Publish
+4. ตั้งค่า GitHub Secrets (Settings → Secrets and variables → Actions):
+   - `GARMIN_EMAIL` = `nuciferx@gmail.com`
+   - `GARMIN_PASSWORD` = `R@inbow40`
+   - `GCP_SA_KEY` = JSON content ของ `gcp_sa_key` ใน `air-quality/creds.json`
+   - `SHEET_ID` = `1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y`
+5. ทดสอบ: Actions → Log Garmin → Run workflow — tab "Garmin" จะถูกสร้างอัตโนมัติ
+
+**Dashboard CSV URL** (ตั้งค่าใน `config.js` แล้ว):
+```
+https://docs.google.com/spreadsheets/d/1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y/gviz/tq?sheet=Garmin&tqx=out:csv
+```
 
 ---
 

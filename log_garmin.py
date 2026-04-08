@@ -1,5 +1,10 @@
 """
-log_garmin.py — ดึงข้อมูล Garmin Connect ทุกชั่วโมง → เก็บ Google Sheets
+log_garmin.py — ดึงข้อมูล Garmin Connect ทุก 15 นาที → เก็บ Google Sheets
+
+Smart logic:
+  - ถ้าไม่มีข้อมูล有意义 (body_battery, steps, hrv = null ทั้งหมด) → ข้าม ไม่เขียน sheet
+  - Dedup: ถ้าข้อมูลหลักเหมือนแถวสุดท้าย → ข้าม (ป้องกันเขียนซ้ำ)
+  - เมื่อใส่ Garmin แล้วมีข้อมูลใหม่ → จะถูกบันทึกทันทีในรอบถัดไป
 
 Env vars required:
   GARMIN_EMAIL     — Garmin account email
@@ -55,6 +60,12 @@ HEADERS = [
     "activity_avg_hr",
 ]
 
+# คอลัมน์ที่ใช้เช็ค meaningful data (ต้องมีอย่างน้อย 1 ตัวที่ไม่ใช่ null)
+MEANINGFUL_KEYS = ["body_battery", "steps", "hrv_last_night"]
+
+# คอลัมน์ที่ใช้เช็ค dedup (ถ้าเหมือนกันทั้งหมด → ข้าม)
+DEDUP_KEYS = ["body_battery", "steps", "hrv_last_night", "resting_hr"]
+
 
 def get_garmin_client() -> Garmin:
     email = os.environ.get("GARMIN_EMAIL")
@@ -80,7 +91,6 @@ def fetch_today(client: Garmin) -> dict:
             vals = [v[1] for v in values if isinstance(v, list) and len(v) > 1 and v[1] is not None]
             if vals:
                 result["body_battery"] = vals[-1]
-                # Also capture start/end for range
                 result["body_battery_start"] = vals[0]
     except Exception as e:
         log.warning("body_battery: %s", e)
@@ -132,7 +142,6 @@ def fetch_today(client: Garmin) -> dict:
         if stress and isinstance(stress, dict):
             values = stress.get("stressValuesArray", [])
             if values:
-                # values = [[timestamp, stress_value], ...]
                 high = max((v[1] for v in values if v[1] is not None), default=None)
                 result["stress_high_min"] = high
     except Exception as e:
@@ -153,6 +162,62 @@ def fetch_today(client: Garmin) -> dict:
         log.warning("activities: %s", e)
 
     return result
+
+
+def has_meaningful_data(data: dict) -> bool:
+    """เช็คว่ามีข้อมูล meaningful อย่างน้อย 1 ตัว (ไม่ใส่นาฬิกา = null ทั้งหมด)"""
+    for key in MEANINGFUL_KEYS:
+        if data.get(key) is not None:
+            return True
+    return False
+
+
+def is_duplicate(ws, new_data: dict) -> bool:
+    """เช็คว่าข้อมูลใหม่เหมือนกับแถวสุดท้ายใน sheet หรือไม่ (dedup)"""
+    try:
+        all_rows = ws.get_all_values()
+        if len(all_rows) < 2:
+            return False  # ยังไม่มีข้อมูล → ไม่ซ้ำ
+
+        last_row = all_rows[-1]  # แถวสุดท้าย
+        header_row = all_rows[0]
+
+        # สร้าง dict จากแถวสุดท้าย
+        last_data = {}
+        for i, key in enumerate(header_row):
+            if key in DEDUP_KEYS:
+                idx = header_row.index(key)
+                val = last_row[idx] if idx < len(last_row) else None
+                # แปลง string → number ถ้าเป็นไปได้
+                if val is not None and val != "":
+                    try:
+                        val = float(val) if "." in str(val) else int(val)
+                    except (ValueError, TypeError):
+                        pass
+                last_data[key] = val
+
+        # เปรียบเทียบทุก key
+        for key in DEDUP_KEYS:
+            new_val = new_data.get(key)
+            old_val = last_data.get(key)
+            # แปลง type ให้เหมือนกันก่อนเทียบ
+            if new_val is None and (old_val is None or old_val == "" or old_val == "null"):
+                continue
+            if new_val is not None and old_val is not None:
+                try:
+                    if float(new_val) == float(old_val):
+                        continue
+                except (ValueError, TypeError):
+                    if str(new_val) == str(old_val):
+                        continue
+            # ถ้าไม่ตรงกัน → ไม่ใช่ duplicate
+            return False
+
+        return True  # ทุก key ตรงกัน → duplicate
+
+    except Exception as e:
+        log.warning("dedup check failed: %s", e)
+        return False  # ถ้าเช็คไม่ได้ → เขียนไปเลย (ปลอดภัยกว่า)
 
 
 def get_sheet():
@@ -196,6 +261,18 @@ def main():
     log.info("กำลังดึงข้อมูล Garmin วันนี้ ...")
     data = fetch_today(client)
 
+    # ── Check 1: มีข้อมูล meaningful หรือไม่ ──
+    if not has_meaningful_data(data):
+        log.info("No meaningful data (body_battery, steps, hrv = null) — ข้าม ไม่เขียน sheet")
+        log.info("ยังไม่ใส่ Garmin หรือยังไม่มีข้อมูลวันนี้ — จะลองใหม่ในรอบถัดไป (15 นาที)")
+        return
+
+    # ── Check 2: Dedup — ข้อมูลซ้ำกับแถวสุดท้ายหรือไม่ ──
+    if is_duplicate(ws, data):
+        log.info("ข้อมูลเหมือนกับแถวสุดท้าย — ข้าม (dedup)")
+        return
+
+    # ── เขียนข้อมูลใหม่ ──
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     row = [ts] + [data.get(k) for k in HEADERS[1:]]
 

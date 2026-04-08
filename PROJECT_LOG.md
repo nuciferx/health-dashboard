@@ -3,6 +3,7 @@
 ## URL
 - **Dashboard**: https://nuciferx.github.io/health-dashboard/
 - **Cloudflare Worker (API proxy)**: https://health-proxy.ideaplanstudio.workers.dev
+- **Garmin Google Sheet**: https://docs.google.com/spreadsheets/d/1e4nwtSKIY3mbPB_H_iX-zTwKG9R8sq7AFTCJUroDL_E/edit
 
 ---
 
@@ -40,8 +41,12 @@
 ### 4. Garmin — 3 วิธีดึงข้อมูล
 
 #### 4a. GitHub Action → Google Sheets (แนะนำ — ทำงานอัตโนมัติ)
-- **Workflow**: `.github/workflows/log-garmin.yml` — cron ทุก 1 ชม. (UTC)
-- **Script**: `log_garmin.py` — login Garmin → ดึงข้อมูล → เขียน Google Sheets
+- **Workflow**: `.github/workflows/log-garmin.yml` — cron ทุก 15 นาที (UTC)
+- **Script**: `log_garmin.py` — login Garmin → ดึงข้อมูล → เขียน Google Sheets (smart logic)
+- **Smart Logic**:
+  - ถ้าไม่มีข้อมูล有意义 (body_battery, steps, hrv = null ทั้งหมด) → ข้าม ไม่เขียน sheet
+  - Dedup: ถ้าข้อมูลหลักเหมือนแถวสุดท้าย → ข้าม (ป้องกันเขียนซ้ำ)
+  - เมื่อใส่ Garmin แล้วมีข้อมูลใหม่ → จะถูกบันทึกทันทีในรอบถัดไป (ภายใน 15 นาที)
 - **ข้อมูลที่ได้**: timestamp, body_battery, steps, hrv_last_night, resting_hr, spo2, stress, activity
 - **Dashboard อ่านจาก**: Google Sheets Published CSV URL (ตั้งค่าใน `config.js → GARMIN_SHEET_URL`)
 - **Secrets ที่ต้องตั้งใน GitHub**:
@@ -70,21 +75,21 @@
 
 ## วิธีตั้งค่า Google Sheets สำหรับ Garmin
 
-ใช้ sheet เดียวกับ air-quality (`1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y`) — script จะสร้าง tab "Garmin" ให้อัตโนมัติ
+ใช้ Sheet ใหม่แยกจาก air-quality (`1e4nwtSKIY3mbPB_H_iX-zTwKG9R8sq7AFTCJUroDL_E`) — script จะสร้าง tab "Garmin" ให้อัตโนมัติ
 
-1. เปิด Google Sheet: https://docs.google.com/spreadsheets/d/1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y
-2. ตรวจสอบว่า service account `nucifer-sheets-bot@nucifer-data-sheet-api.iam.gserviceaccount.com` มีสิทธิ์ Editor (น่าจะมีอยู่แล้วจาก air-quality)
+1. เปิด Google Sheet: https://docs.google.com/spreadsheets/d/1e4nwtSKIY3mbPB_H_iX-zTwKG9R8sq7AFTCJUroDL_E/edit
+2. ตรวจสอบว่า service account `nucifer-sheets-bot@nucifer-data-sheet-api.iam.gserviceaccount.com` มีสิทธิ์ Editor
 3. **Publish to web**: File → Share → Publish to web → เลือก tab "Garmin" → Comma-separated values (.csv) → Publish
 4. ตั้งค่า GitHub Secrets (Settings → Secrets and variables → Actions):
    - `GARMIN_EMAIL` = `nuciferx@gmail.com`
    - `GARMIN_PASSWORD` = `R@inbow40`
-   - `GCP_SA_KEY` = JSON content ของ `gcp_sa_key` ใน `air-quality/creds.json`
-   - `SHEET_ID` = `1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y`
+   - `GCP_SA_KEY` = JSON content ของ service account
+   - `SHEET_ID` = `1e4nwtSKIY3mbPB_H_iX-zTwKG9R8sq7AFTCJUroDL_E`
 5. ทดสอบ: Actions → Log Garmin → Run workflow — tab "Garmin" จะถูกสร้างอัตโนมัติ
 
 **Dashboard CSV URL** (ตั้งค่าใน `config.js` แล้ว):
 ```
-https://docs.google.com/spreadsheets/d/1Gi1A-6YHoVOyvaDy_jk3eARSlmTWqRrDrOXVamm4O_Y/gviz/tq?sheet=Garmin&tqx=out:csv
+https://docs.google.com/spreadsheets/d/1e4nwtSKIY3mbPB_H_iX-zTwKG9R8sq7AFTCJUroDL_E/gviz/tq?sheet=Garmin&tqx=out:csv
 ```
 
 ---
@@ -149,4 +154,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-04-08
+## Last updated: 2026-04-08 — Garmin Sheet ใหม่ + Smart logic (skip/dedup) + cron 15 นาที

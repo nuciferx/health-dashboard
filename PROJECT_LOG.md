@@ -29,20 +29,37 @@
   - `GET /oura/*` → proxy ไป Oura API v2 (token ซ่อนใน Worker)
   - `POST /gemini` → proxy ไป Gemini 2.0 Flash (key ซ่อนใน Worker)
 - Secrets ที่เก็บใน Worker (ไม่อยู่ใน code):
-  - `OURA_TOKEN` = XKJ5LXPVFSD62Z3SNNM43ZW2E7C4FJ5A
-  - `GEMINI_KEY` = AIzaSyAzy0svHVW8lxLNAxTK0pvVKJEXAB7H9Tw
+  - `OURA_TOKEN` — set via `npx wrangler secret put OURA_TOKEN`
+  - `GEMINI_KEY` — set via `npx wrangler secret put GEMINI_KEY`
 
 ### 3. PWA (Progressive Web App)
 - `manifest.json` — ชื่อ, icon, theme color
 - `sw.js` — Service Worker: cache assets, network-first สำหรับ API
 - สามารถ "Add to Home Screen" ได้บนมือถือ
 
-### 4. Garmin Local Server (`garmin_server.py`)
+### 4. Garmin — 3 วิธีดึงข้อมูล
+
+#### 4a. GitHub Action → Google Sheets (แนะนำ — ทำงานอัตโนมัติ)
+- **Workflow**: `.github/workflows/log-garmin.yml` — cron ทุก 1 ชม. (UTC)
+- **Script**: `log_garmin.py` — login Garmin → ดึงข้อมูล → เขียน Google Sheets
+- **ข้อมูลที่ได้**: timestamp, body_battery, steps, hrv_last_night, resting_hr, spo2, stress, activity
+- **Dashboard อ่านจาก**: Google Sheets Published CSV URL (ตั้งค่าใน `config.js → GARMIN_SHEET_URL`)
+- **Secrets ที่ต้องตั้งใน GitHub**:
+  - `GARMIN_EMAIL` — email
+  - `GARMIN_PASSWORD` — password
+  - `GCP_SA_KEY` — Google Service Account JSON
+  - `SHEET_ID` — Google Sheets ID
+
+#### 4b. Local Flask Server (`garmin_server.py`)
 - Flask server รัน `http://localhost:5001/garmin`
 - ดึง: body_battery, steps, HRV last night, last_activity
 - Cache 5 นาที
 - รัน: `py -3 garmin_server.py`
-- Credentials: `nuciferx@gmail.com` / `R@inbow40` (เก็บใน `.env`)
+- Credentials: เก็บใน `.env`
+
+#### 4c. Manual Paste
+- CLI: `py -3 garmin_export.py <email> <password>`
+- Copy JSON output → paste ลงช่อง "Paste Garmin JSON" ใน dashboard
 
 ### 5. Location Parser (`location_parse.py`)
 - รัน: `py -3 location_parse.py`
@@ -51,12 +68,28 @@
 
 ---
 
+## วิธีตั้งค่า Google Sheets สำหรับ Garmin
+
+1. สร้าง Google Sheet ใหม่
+2. ไปที่ **File → Share → Publish to web**
+3. เลือก sheet ที่ต้องการ → **Comma-separated values (.csv)** → Publish
+4. คัดลอก URL ที่ได้ (รูปแบบ: `https://docs.google.com/spreadsheets/d/.../gviz/tq?tqx=out:csv`)
+5. ใส่ใน `config.js`:
+   ```js
+   GARMIN_SHEET_URL: "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/gviz/tq?tqx=out:csv"
+   ```
+6. ตั้งค่า GitHub Secrets (Settings → Secrets and variables → Actions):
+   - `GARMIN_EMAIL`, `GARMIN_PASSWORD`
+   - `GCP_SA_KEY` — JSON ของ Google Service Account (ต้องมีสิทธิ์ edit sheet)
+   - `SHEET_ID` — ID จาก URL ของ sheet
+
+---
+
 ## สิ่งที่ยังไม่ได้ทำ / Limitations
 
 | รายการ | เหตุผล |
 |--------|--------|
 | Auto location tracking รายวัน | Data Portability API ต้อง Google Verification (หลายสัปดาห์) |
-| Garmin ทำงานอัตโนมัติบนเว็บ | garmin_server.py ต้องรันในเครื่อง (localhost) |
 | Commute auto-fill จาก GPS | ยังไม่มีระบบ — manual entry ใน dashboard |
 
 ---
@@ -65,7 +98,7 @@
 
 ```bash
 # แก้ไฟล์ใดก็ได้ แล้ว:
-cd F:/ai/health-dashboard
+cd G:/drive/01 project/ai/health-dashboard
 git add <ไฟล์>
 git commit -m "..."
 git push
@@ -75,7 +108,7 @@ git push
 ## อัพเดต Cloudflare Worker
 
 ```bash
-cd F:/ai/health-dashboard/cf-worker
+cd G:/drive/01 project/ai/health-dashboard/cf-worker
 npx wrangler deploy
 # อัพเดต secret:
 echo "NEW_VALUE" | npx wrangler secret put SECRET_NAME
@@ -93,11 +126,15 @@ health-dashboard/
 ├── icon-192.png        # PWA icon
 ├── icon-512.png        # PWA icon
 ├── config.js           # Local config (gitignored) — PROXY_URL, keys
+├── log_garmin.py       # GitHub Action: ดึง Garmin → Google Sheets ทุก 1 ชม.
+├── requirements.txt    # Python deps (garminconnect, gspread, python-dotenv)
 ├── garmin_server.py    # Flask local server ดึง Garmin
 ├── garmin_export.py    # CLI export Garmin data
 ├── location_fetch.py   # Data Portability API (ใช้ไม่ได้ — scope restricted)
 ├── location_parse.py   # Parse Google Takeout → commute.json
 ├── .env                # Garmin credentials (gitignored)
+├── .github/workflows/
+│   └── log-garmin.yml  # GitHub Action: cron ทุก 1 ชม.
 ├── cf-worker/
 │   ├── src/index.js    # Cloudflare Worker code
 │   └── wrangler.toml   # Worker config
@@ -108,4 +145,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-03-22
+## Last updated: 2026-04-08

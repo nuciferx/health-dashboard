@@ -3,6 +3,8 @@
 *.env
 secrets.json
 credentials.json
+creds.json
+client_secrets.json
 config.js
 location_token.json
 
@@ -12,3 +14,6 @@ __pycache__/
 *.pyo
 .venv/
 venv/
+
+# Garmin MFA
+.garmin/

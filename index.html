@@ -790,11 +790,12 @@
 
 // ── Config ──────────────────────────────────────────────────────
 const SK = { OURA:'hd_oura_token', CLAUDE:'hd_gemini_key', HIST:'hd_history', GARMIN:'hd_garmin_json' }
-const PROXY_URL    = (window.HD_CONFIG||{}).PROXY_URL || 'https://health-proxy.ideaplanstudio.workers.dev'
-const OURA_BASE    = PROXY_URL ? `${PROXY_URL}/oura` : 'https://api.ouraring.com/v2'
-const GEMINI_PROXY = PROXY_URL ? `${PROXY_URL}/gemini` : ''
-const GARMIN_SERVER  = 'http://localhost:5001/garmin'
-const GARMIN_TIMEOUT = 4000
+const PROXY_URL       = (window.HD_CONFIG||{}).PROXY_URL || 'https://health-proxy.ideaplanstudio.workers.dev'
+const OURA_BASE       = PROXY_URL ? `${PROXY_URL}/oura` : 'https://api.ouraring.com/v2'
+const GEMINI_PROXY    = PROXY_URL ? `${PROXY_URL}/gemini` : ''
+const GARMIN_SERVER   = 'http://localhost:5001/garmin'
+const GARMIN_TIMEOUT  = 4000
+const GARMIN_SHEET_URL = (window.HD_CONFIG||{}).GARMIN_SHEET_URL || ''  // Google Sheets published CSV
 
 // ── State ────────────────────────────────────────────────────────
 let travelLevel = 0
@@ -1084,6 +1085,7 @@ async function retryGarminServer() {
 function setGarminBadge(online,mode=null) {
   const badge=document.getElementById('garmin-server-badge')
   if (!badge) return
+  if (mode==='sheet')  { badge.style.color='var(--caution)'; badge.textContent='📊 Google Sheets' }
   if (mode==='manual') { badge.style.color='var(--caution)'; badge.textContent='📋 Manual' }
   else if (online)     { badge.style.color='var(--optimal)'; badge.textContent='🟢 Auto (localhost)' }
   else                 { badge.style.color='var(--muted)';   badge.textContent='⚫ Server ไม่รัน' }
@@ -1283,6 +1285,64 @@ async function fetchGarminAuto() {
     if(data.error) return null
     store(SK.GARMIN,data); return data
   } catch { clearTimeout(tid); return null }
+}
+
+// ── Garmin Google Sheets (CSV) ────────────────────────────────────
+let garminHistory = []  // [{timestamp, body_battery, steps, hrv_last_night, ...}]
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n')
+  if (lines.length < 2) return []
+  const headers = lines[0].split(',').map(h => h.trim())
+  return lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim())
+    const row = {}
+    headers.forEach((h, i) => {
+      const v = vals[i]
+      row[h] = (v === '' || v === 'null') ? null : (isNaN(v) ? v : Number(v))
+    })
+    return row
+  })
+}
+
+async function fetchGarminSheet() {
+  if (!GARMIN_SHEET_URL) return []
+  try {
+    const res = await fetch(GARMIN_SHEET_URL)
+    if (!res.ok) return []
+    const text = await res.text()
+    garminHistory = parseCSV(text)
+    return garminHistory
+  } catch(e) {
+    console.warn('Garmin sheet fetch failed:', e)
+    return []
+  }
+}
+
+function getGarminToday() {
+  const today = todayStr()
+  // Find latest entry for today
+  const todayRows = garminHistory.filter(r => r.timestamp && r.timestamp.startsWith(today))
+  return todayRows.length ? todayRows[todayRows.length - 1] : null
+}
+
+function mergeGarminSheetIntoDisplay() {
+  const today = getGarminToday()
+  if (!today) return
+  // Merge sheet data into garminData for display
+  if (!garminData) garminData = {}
+  if (today.body_battery != null) garminData.body_battery = today.body_battery
+  if (today.steps != null) garminData.steps = today.steps
+  if (today.hrv_last_night != null) garminData.hrv_last_night = today.hrv_last_night
+  if (today.resting_hr != null) garminData.resting_hr = today.resting_hr
+  if (today.activity_type) {
+    garminData.last_activity = {
+      type: today.activity_type,
+      distance_km: today.activity_distance_km,
+      duration_min: today.activity_duration_min,
+      avg_hr: today.activity_avg_hr,
+    }
+  }
 }
 
 // ── History ──────────────────────────────────────────────────────
@@ -1717,9 +1777,18 @@ async function loadDashboard() {
     new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
   setStatus('load','กำลังโหลด...')
 
+  // Fetch Garmin: try localhost first, fallback to Google Sheets
   const garminAuto=await fetchGarminAuto()
   if (garminAuto) { garminData=garminAuto; setGarminBadge(true) }
-  else { garminData=recall(SK.GARMIN)||null; setGarminBadge(false,garminData?'manual':null) }
+  else {
+    garminData=recall(SK.GARMIN)||null
+    setGarminBadge(false,garminData?'manual':null)
+  }
+  // Also fetch Google Sheets for history + today fallback
+  if (GARMIN_SHEET_URL) {
+    await fetchGarminSheet()
+    if (!garminData) { mergeGarminSheetIntoDisplay(); setGarminBadge(false, garminData?'sheet':null) }
+  }
 
   setStatus('load','กำลังโหลด Oura...')
   try {

@@ -1,0 +1,24 @@
+name: Log Garmin
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # every hour (UTC)
+  workflow_dispatch:
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - run: python log_garmin.py
+        env:
+          GARMIN_EMAIL:     ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD:  ${{ secrets.GARMIN_PASSWORD }}
+          GCP_SA_KEY:       ${{ secrets.GCP_SA_KEY }}
+          SHEET_ID:         ${{ secrets.SHEET_ID }}

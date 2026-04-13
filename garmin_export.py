@@ -88,7 +88,7 @@ def get_garmin_data(email: str, password: str) -> dict:
             result["last_activity"] = {
                 "type":         act.get("activityType", {}).get("typeKey", "unknown"),
                 "distance_km":  round(dist_m / 1000, 2) if dist_m else None,
-                "duration_min": round(dur_s  / 60,    0) if dur_s  else None,
+                "duration_min": round(dur_s  / 60) if dur_s  else None,
                 "avg_hr":       act.get("averageHR"),
             }
     except Exception as e:

@@ -53,7 +53,6 @@ HEADERS = [
     "resting_hr",
     "spo2",
     "stress_high_min",
-    "recovery_high_min",
     "activity_type",
     "activity_distance_km",
     "activity_duration_min",
@@ -91,7 +90,6 @@ def fetch_today(client: Garmin) -> dict:
             vals = [v[1] for v in values if isinstance(v, list) and len(v) > 1 and v[1] is not None]
             if vals:
                 result["body_battery"] = vals[-1]
-                result["body_battery_start"] = vals[0]
     except Exception as e:
         log.warning("body_battery: %s", e)
 
@@ -186,8 +184,7 @@ def is_duplicate(ws, new_data: dict) -> bool:
         last_data = {}
         for i, key in enumerate(header_row):
             if key in DEDUP_KEYS:
-                idx = header_row.index(key)
-                val = last_row[idx] if idx < len(last_row) else None
+                val = last_row[i] if i < len(last_row) else None
                 # แปลง string → number ถ้าเป็นไปได้
                 if val is not None and val != "":
                     try:
@@ -228,8 +225,13 @@ def get_sheet():
         sa_key = json.loads(sa_key_raw)
     else:
         creds_path = os.path.join(os.path.dirname(__file__), "creds.json")
-        with open(creds_path) as f:
-            data = json.load(f)
+        try:
+            with open(creds_path) as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"ไม่พบ creds.json ({creds_path}) และไม่ได้ตั้งค่า GCP_SA_KEY env var"
+            )
         sa_key = data.get("gcp_sa_key")
         sheet_id = sheet_id or data.get("sheet_id")
 

@@ -53,6 +53,7 @@ HEADERS = [
     "resting_hr",
     "spo2",
     "stress_high_min",
+    "recovery_high_min",
     "activity_type",
     "activity_distance_km",
     "activity_duration_min",

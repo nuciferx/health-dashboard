@@ -67,11 +67,51 @@ MEANINGFUL_KEYS = ["body_battery", "steps", "hrv_last_night"]
 DEDUP_KEYS = ["body_battery", "steps", "hrv_last_night", "resting_hr"]
 
 
-def get_garmin_client() -> Garmin:
-    email = os.environ.get("GARMIN_EMAIL")
-    password = os.environ.get("GARMIN_PASSWORD")
-    if not email or not password:
-        raise ValueError("ไม่พบ GARMIN_EMAIL หรือ GARMIN_PASSWORD")
+def emit_github_error(message: str) -> None:
+    print(f"::error::{message}", file=sys.stderr)
+
+
+def require_env(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+def get_garmin_credentials() -> tuple[str, str]:
+    return require_env("GARMIN_EMAIL"), require_env("GARMIN_PASSWORD")
+
+
+def load_sheet_config() -> tuple[dict, str]:
+    sa_key_raw = os.environ.get("GCP_SA_KEY")
+    sheet_id = os.environ.get("SHEET_ID")
+
+    if sa_key_raw:
+        try:
+            sa_key = json.loads(sa_key_raw)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"GCP_SA_KEY is not valid JSON: {e}") from e
+    else:
+        creds_path = os.path.join(os.path.dirname(__file__), "creds.json")
+        try:
+            with open(creds_path, encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError as e:
+            raise RuntimeError(
+                "Missing GCP_SA_KEY GitHub secret or local creds.json file."
+            ) from e
+        sa_key = data.get("gcp_sa_key")
+        sheet_id = sheet_id or data.get("sheet_id")
+
+    if not sa_key:
+        raise RuntimeError("Missing Google service account JSON in GCP_SA_KEY or creds.json.")
+    if not sheet_id:
+        raise RuntimeError("Missing required environment variable: SHEET_ID")
+
+    return sa_key, sheet_id
+
+
+def get_garmin_client(email: str, password: str) -> Garmin:
     log.info("กำลัง login Garmin (%s) ...", email)
     client = Garmin(email, password)
     client.login()
@@ -218,27 +258,7 @@ def is_duplicate(ws, new_data: dict) -> bool:
         return False  # ถ้าเช็คไม่ได้ → เขียนไปเลย (ปลอดภัยกว่า)
 
 
-def get_sheet():
-    sa_key_raw = os.environ.get("GCP_SA_KEY")
-    sheet_id = os.environ.get("SHEET_ID")
-
-    if sa_key_raw:
-        sa_key = json.loads(sa_key_raw)
-    else:
-        creds_path = os.path.join(os.path.dirname(__file__), "creds.json")
-        try:
-            with open(creds_path) as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            raise RuntimeError(
-                f"ไม่พบ creds.json ({creds_path}) และไม่ได้ตั้งค่า GCP_SA_KEY env var"
-            )
-        sa_key = data.get("gcp_sa_key")
-        sheet_id = sheet_id or data.get("sheet_id")
-
-    if not sheet_id:
-        raise RuntimeError("SHEET_ID not set.")
-
+def get_sheet(sa_key: dict, sheet_id: str):
     gc = gspread.service_account_from_dict(sa_key)
     ss = gc.open_by_key(sheet_id)
 
@@ -258,8 +278,10 @@ def get_sheet():
 
 
 def main():
-    client = get_garmin_client()
-    ws = get_sheet()
+    email, password = get_garmin_credentials()
+    sa_key, sheet_id = load_sheet_config()
+    ws = get_sheet(sa_key, sheet_id)
+    client = get_garmin_client(email, password)
 
     log.info("กำลังดึงข้อมูล Garmin วันนี้ ...")
     data = fetch_today(client)
@@ -286,4 +308,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except GarminConnectAuthenticationError as e:
+        message = f"Garmin authentication failed: {e}"
+        log.error(message)
+        emit_github_error(message)
+        sys.exit(1)
+    except Exception as e:
+        log.error("%s", e)
+        emit_github_error(str(e))
+        sys.exit(1)

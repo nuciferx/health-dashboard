@@ -15,6 +15,21 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+      - name: Check required secrets
+        env:
+          GARMIN_EMAIL:     ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD:  ${{ secrets.GARMIN_PASSWORD }}
+          GCP_SA_KEY:       ${{ secrets.GCP_SA_KEY }}
+          SHEET_ID:         ${{ secrets.SHEET_ID }}
+        run: |
+          missing=0
+          for name in GARMIN_EMAIL GARMIN_PASSWORD GCP_SA_KEY SHEET_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
       - run: pip install -r requirements.txt
       - run: python log_garmin.py
         env:

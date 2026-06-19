@@ -27,13 +27,14 @@
 | แหล่ง | ใช้ดู | เสถียรภาพ |
 |------|------|-----------|
 | **Oura** (`OURA_TOKEN`) | นอน/HRV/RHR/readiness (ใส่ตอนนอน) | ✅ REST API เสถียรมาก — ดึงได้ทั้ง local + CI |
-| **Strava** (MCP `mcp__claude_ai_Strava__*`) | activity เต็ม HR/elevation | ✅ ใช้ตอนคุยกับ Claude เท่านั้น |
-| **Garmin FR255** (`GARMIN_EMAIL`/`PASSWORD`) | VO2max/training-status/activity | ⚠️ **login ได้เฉพาะ local (IP บ้าน)** — บน GitHub Actions โดนบล็อก 429/403 เสมอ |
+| **Strava API** (`STRAVA_CLIENT_ID/SECRET/REFRESH_TOKEN`) | activity (cloud!) — Garmin sync เข้า Strava อัตโนมัติ | ✅ ดึงจาก cloud ได้ (OAuth refresh token) — **แหล่ง activity หลักของ digest** |
+| **Strava MCP** (`mcp__claude_ai_Strava__*`) | activity เต็ม HR/stream/zone | ✅ ใช้ตอนคุยกับ Claude (/health) |
+| **Garmin FR255** (`GARMIN_EMAIL`/`PASSWORD`) | VO2max/training-status/body-battery | ⚠️ **login ได้เฉพาะ local (IP บ้าน)** — cloud โดนบล็อก 429/403 เสมอ → ใช้ผ่าน /health on-demand |
 
-> ⚠️ **สำคัญ:** Garmin **ดึงจาก cloud ไม่ได้** (ยืนยันแล้ว) → digest อัตโนมัติจะขึ้น "Garmin: n/a" เป็นปกติ ไม่ใช่บั๊ก · อยากได้ activity จริงให้ใช้ Strava ผ่าน Claude
+> ⚠️ **สำคัญ:** Garmin **ดึงจาก cloud ไม่ได้** (ยืนยันแล้ว). digest/worker ใช้ **Strava API** เป็นแหล่ง activity (Garmin ป้อนเข้า Strava ให้เอง). Garmin-only wellness (VO2max/training status) ดึงผ่าน /health กับ Claude เท่านั้น
 
 ## Secrets
-- **GitHub Actions** (สำหรับ digest): `OURA_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `GARMIN_EMAIL`, `GARMIN_PASSWORD`
+- **GitHub Actions** (สำหรับ digest): `OURA_TOKEN`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REFRESH_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `GARMIN_EMAIL`, `GARMIN_PASSWORD`
 - **Local** `.env`: `OURA_TOKEN`, `GARMIN_EMAIL`, `GARMIN_PASSWORD` (+ `SHEET_ID`, `GCP_SA_KEY` legacy)
 - **Cloudflare** worker `health-proxy` (`cf-worker/`): `OURA_TOKEN`, `GEMINI_KEY` — proxy ให้ dashboard เก่า `index.html`
 - ตั้ง GitHub secret: `printf '%s' "<val>" | gh secret set <NAME>` (ต้อง `gh auth login` ก่อน)

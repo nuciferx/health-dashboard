@@ -212,6 +212,55 @@ def fetch_garmin():
         return {"error": str(e)[:80]}
 
 
+# ── Strava (activity จาก cloud — Garmin sync เข้า Strava อยู่แล้ว) ─────────
+def fetch_strava():
+    """ดึง activity ล่าสุดจาก Strava API. คืน dict หรือ {'error': ...}
+    ต้องมี env: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN"""
+    cid = os.environ.get("STRAVA_CLIENT_ID")
+    secret = os.environ.get("STRAVA_CLIENT_SECRET")
+    refresh = os.environ.get("STRAVA_REFRESH_TOKEN")
+    if not (cid and secret and refresh):
+        return {"error": "no-credentials"}
+    try:
+        tok = requests.post("https://www.strava.com/oauth/token", data={
+            "client_id": cid, "client_secret": secret,
+            "refresh_token": refresh, "grant_type": "refresh_token",
+        }, timeout=30)
+        tok.raise_for_status()
+        access = tok.json()["access_token"]
+        r = requests.get("https://www.strava.com/api/v3/athlete/activities",
+                         headers={"Authorization": f"Bearer {access}"},
+                         params={"per_page": 1}, timeout=30)
+        r.raise_for_status()
+        acts = r.json()
+        if not acts:
+            return {"error": "no-activity"}
+        a = acts[0]
+        dur = a.get("moving_time") or a.get("elapsed_time") or 0
+        gain = a.get("total_elevation_gain") or 0
+        return {
+            "name": a.get("name"),
+            "type": a.get("sport_type") or a.get("type"),
+            "date": (a.get("start_date_local") or "")[:10],
+            "km": round((a.get("distance") or 0) / 1000, 1) or None,
+            "min": round(dur / 60) if dur else None,
+            "gain_m": round(gain) if gain else None,
+            "avg_hr": round(a["average_heartrate"]) if a.get("average_heartrate") else None,
+            "vert": round(gain / (dur / 3600)) if (gain and dur) else None,  # ม/ชม
+        }
+    except Exception as e:
+        return {"error": str(e)[:80]}
+
+
+def pick_activity(strava, garmin):
+    """เลือกแหล่ง activity: Strava ก่อน (cloud-friendly) → Garmin (local) → None"""
+    if strava and "error" not in strava:
+        return {**strava, "source": "Strava"}
+    if garmin and "error" not in garmin:
+        return {**garmin, "source": "Garmin"}
+    return None
+
+
 # ── Format ──────────────────────────────────────────────────────────────
 def arrow(now, avg):
     if now is None or avg is None:
@@ -237,7 +286,7 @@ THAI_MON = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค."
             "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
 
 
-def build_message(today, oura, garmin, plan):
+def build_message(today, oura, activity, plan):
     days_left = (RACE_DATE - today).days
     L = []
     L.append(f"🌅 {THAI_DOW[today.weekday()]} {today.day} {THAI_MON[today.month]} — เหลือ {days_left} วัน CM6 i2")
@@ -272,30 +321,29 @@ def build_message(today, oura, garmin, plan):
 
     L.append("")
 
-    # 🏃 activity ล่าสุด (Garmin best-effort)
-    if "error" in garmin:
-        note = {"no-credentials": "ไม่ได้ตั้ง credential",
-                "no-activity": "ไม่มีกิจกรรม",
-                }.get(garmin["error"], "ดึงไม่ได้ (Garmin อาจบล็อก CI)")
-        L.append(f"🏃 Garmin: n/a — {note}")
-        L.append("   (อยากดู activity เต็ม → คุยกับ Claude ใช้ Strava)")
+    # 🏃 activity ล่าสุด (Strava ก่อน → Garmin local)
+    if not activity:
+        L.append("🏃 activity: n/a — (ดูเต็ม → /health กับ Claude)")
     else:
         parts = []
-        if garmin.get("km"):
-            parts.append(f"{garmin['km']} กม.")
-        if garmin.get("min"):
-            parts.append(f"{garmin['min']} นาที")
-        if garmin.get("gain_m"):
-            parts.append(f"+{garmin['gain_m']} ม.")
-        desc = " · ".join(parts) if parts else (garmin.get("type") or "กิจกรรม")
-        L.append(f"🏃 ล่าสุด ({garmin.get('date') or '?'}): {desc}")
-        hr = garmin.get("avg_hr")
+        if activity.get("km"):
+            parts.append(f"{activity['km']} กม.")
+        if activity.get("min"):
+            parts.append(f"{activity['min']} นาที")
+        if activity.get("gain_m"):
+            parts.append(f"+{activity['gain_m']} ม.")
+        desc = " · ".join(parts) if parts else (activity.get("type") or "กิจกรรม")
+        L.append(f"🏃 ล่าสุด ({activity.get('date') or '?'}): {desc}")
+        hr = activity.get("avg_hr")
         if hr:
             z = zone_of(hr)
             mark = " ✅ คุมโซนดี" if hr <= EASY_HR_CAP else " ⚠️ HR สูง — ระวัง pacing"
             L.append(f"   avgHR {hr} ({z}){mark}")
             if hr > EASY_HR_CAP:
                 flags.append("HR ซ้อมสูง")
+        if activity.get("vert"):
+            vmark = " ✅" if activity["vert"] >= 550 else (" 🟡" if activity["vert"] >= 400 else " 🔴 (เป้า 550-650)")
+            L.append(f"   ไต่ {activity['vert']} ม/ชม{vmark}")
 
     L.append("")
 
@@ -335,9 +383,11 @@ def main():
 
     today = datetime.now(ICT).date()
     oura = fetch_oura(token, today)
-    garmin = fetch_garmin()
+    strava = fetch_strava()
+    garmin = fetch_garmin() if "error" in strava else None  # fallback เฉพาะตอน Strava ไม่พร้อม (local)
+    activity = pick_activity(strava, garmin)
     plan = plan_for(today)
-    msg = build_message(today, oura, garmin, plan)
+    msg = build_message(today, oura, activity, plan)
 
     tg_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     tg_chat = os.environ.get("TELEGRAM_CHAT_ID")

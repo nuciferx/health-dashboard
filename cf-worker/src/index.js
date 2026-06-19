@@ -4,6 +4,7 @@
 //   GEMINI_KEY              — Google Gemini API key (dashboard เก่า)
 //   TELEGRAM_BOT_TOKEN      — บอท Telegram (สำหรับตอบคำสั่ง)
 //   TELEGRAM_WEBHOOK_SECRET — (optional) ตรวจ header กัน request ปลอม
+//   STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET / STRAVA_REFRESH_TOKEN — activity (cloud)
 // คำสั่ง Telegram (ระดับ 1, ดึง Oura สด): /today /readiness /plan /help
 
 const CORS = {
@@ -99,7 +100,46 @@ async function fetchOura(token, today) {
   return out
 }
 
+// ── Strava (activity จาก cloud) ─────────────────────────────────────
+async function fetchStrava(env) {
+  const cid = env.STRAVA_CLIENT_ID, secret = env.STRAVA_CLIENT_SECRET, refresh = env.STRAVA_REFRESH_TOKEN
+  if (!cid || !secret || !refresh) return null
+  try {
+    const tok = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: cid, client_secret: secret, refresh_token: refresh, grant_type: 'refresh_token' }),
+    })
+    if (!tok.ok) return null
+    const access = (await tok.json()).access_token
+    const r = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { Authorization: `Bearer ${access}` } })
+    if (!r.ok) return null
+    const acts = await r.json()
+    if (!acts.length) return null
+    const a = acts[0], dur = a.moving_time || a.elapsed_time || 0, gain = a.total_elevation_gain || 0
+    return {
+      type: a.sport_type || a.type, date: (a.start_date_local || '').slice(0, 10),
+      km: a.distance ? Math.round(a.distance / 100) / 10 : null,
+      min: dur ? Math.round(dur / 60) : null,
+      gain_m: gain ? Math.round(gain) : null,
+      avg_hr: a.average_heartrate ? Math.round(a.average_heartrate) : null,
+      vert: (gain && dur) ? Math.round(gain / (dur / 3600)) : null,
+    }
+  } catch (e) { return null }
+}
+
 // ── formatters ──────────────────────────────────────────────────────
+function zoneOf(hr) { for (const [lo, hi, n] of ZONES) if (hr >= lo && hr <= hi) return n; return hr < ZONES[0][0] ? 'Z1' : 'Z4+' }
+function activityLines(act) {
+  if (!act) return ['🏃 activity: n/a — (ดูเต็ม → /health กับ Claude)']
+  const parts = []
+  if (act.km) parts.push(`${act.km} กม.`)
+  if (act.min) parts.push(`${act.min} นาที`)
+  if (act.gain_m) parts.push(`+${act.gain_m} ม.`)
+  const L = [`🏃 ล่าสุด (${act.date || '?'}): ${parts.length ? parts.join(' · ') : (act.type || 'กิจกรรม')}`]
+  if (act.avg_hr) { const m = act.avg_hr <= EASY_HR_CAP ? ' ✅ คุมโซนดี' : ' ⚠️ HR สูง — ระวัง pacing'; L.push(`   avgHR ${act.avg_hr} (${zoneOf(act.avg_hr)})${m}`) }
+  if (act.vert) { const vm = act.vert >= 550 ? ' ✅' : (act.vert >= 400 ? ' 🟡' : ' 🔴 (เป้า 550-650)'); L.push(`   ไต่ ${act.vert} ม/ชม${vm}`) }
+  return L
+}
 function arrow(now, avg) {
   if (now == null || avg == null) return ''
   if (now > avg * 1.03) return ' ↑'
@@ -130,9 +170,10 @@ function planLines(p) {
   if (p.h && p.h !== '—') L.push(`   เป้า HR: ${p.h}`)
   return L
 }
-function digestText(iso, o, p) {
+function digestText(iso, o, act, p) {
   const { L, flags } = recoveryLines(o)
-  const out = [header(iso), '', ...L, '', '🏃 activity: ดูเต็มผ่าน /health กับ Claude (Strava)', '', ...planLines(p)]
+  if (act && act.avg_hr && act.avg_hr > EASY_HR_CAP) flags.push('HR ซ้อมสูง')
+  const out = [header(iso), '', ...L, '', ...activityLines(act), '', ...planLines(p)]
   if (flags.length) { out.push(''); out.push('⚠️ ธงเตือน: ' + flags.join(' · ')) }
   return out.join('\n')
 }
@@ -155,8 +196,8 @@ async function handleTelegram(update, env) {
   const today = ictTodayISO()
 
   if (cmd === '/today' || cmd === '/now' || cmd === '/start') {
-    const o = await fetchOura(env.OURA_TOKEN, today)
-    await tgSend(token, msg.chat.id, digestText(today, o, planFor(today)))
+    const [o, act] = await Promise.all([fetchOura(env.OURA_TOKEN, today), fetchStrava(env)])
+    await tgSend(token, msg.chat.id, digestText(today, o, act, planFor(today)))
   } else if (cmd === '/readiness') {
     const o = await fetchOura(env.OURA_TOKEN, today)
     const { L } = recoveryLines(o)

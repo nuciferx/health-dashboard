@@ -182,11 +182,31 @@ function digestText(iso, o, act, p) {
 }
 
 // ── Telegram ────────────────────────────────────────────────────────
-async function tgSend(token, chatId, text) {
+async function tgSend(token, chatId, text, markup) {
+  const body = { chat_id: chatId, text }
+  if (markup) body.reply_markup = markup
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }),
+    body: JSON.stringify(body),
   })
+}
+const EDIT_BTN = { inline_keyboard: [[{ text: '✏️ แก้ไขเป็นตาราง', web_app: { url: 'https://health-proxy.ideaplanstudio.workers.dev/edit' } }]] }
+
+// ── ตรวจ Telegram WebApp initData (HMAC) ────────────────────────────
+async function hmacRaw(keyBytes, msg) {
+  const k = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  return new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))
+}
+const toHex = (b) => [...b].map(x => x.toString(16).padStart(2, '0')).join('')
+async function validateInit(initData, botToken) {
+  if (!initData) return null
+  const p = new URLSearchParams(initData)
+  const hash = p.get('hash'); if (!hash) return null
+  p.delete('hash')
+  const dcs = [...p.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([k, v]) => `${k}=${v}`).join('\n')
+  const secret = await hmacRaw(new TextEncoder().encode('WebAppData'), botToken)
+  if (toHex(await hmacRaw(secret, dcs)) !== hash) return null
+  try { return JSON.parse(p.get('user') || 'null') } catch (e) { return null }
 }
 const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '🧾 ส่งรูปใบเสร็จ — ดึงรายการ+ราคา+แคล (โหมดทดสอบ)', '/token — สรุป token + ค่าใช้จ่าย Gemini', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
 
@@ -303,7 +323,7 @@ async function handlePhoto(msg, env) {
       return
     }
     await saveDraft(env, msg.chat.id, data)
-    await tgSend(token, msg.chat.id, renderReceipt(data) + extra)
+    await tgSend(token, msg.chat.id, renderReceipt(data) + extra, EDIT_BTN)
   } catch (e) {
     await tgSend(token, msg.chat.id, '🧾 ขออภัย อ่านใบเสร็จไม่สำเร็จ ลองใหม่อีกครั้ง')
   }
@@ -317,7 +337,7 @@ async function handleCorrection(msg, env) {
   const extra = await usageLine(env, usage)
   if (!data) { await tgSend(token, msg.chat.id, '🧾 แก้ไม่สำเร็จ ลองพิมพ์ใหม่' + extra); return true }
   await saveDraft(env, msg.chat.id, data)
-  await tgSend(token, msg.chat.id, renderReceipt(data) + extra)
+  await tgSend(token, msg.chat.id, renderReceipt(data) + extra, EDIT_BTN)
   return true
 }
 
@@ -349,6 +369,52 @@ async function handleTelegram(update, env) {
   }
 }
 
+// ── Telegram Mini App: ตารางแก้ใบเสร็จ ──────────────────────────────
+const EDIT_HTML = `<!doctype html><html lang=th><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+body{font-family:-apple-system,sans-serif;padding:12px;background:var(--tg-theme-bg-color,#fff);color:var(--tg-theme-text-color,#000);margin:0}
+h3{margin:.3em 0}
+.fld{margin:6px 0}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+th,td{border:1px solid var(--tg-theme-hint-color,#ccc);padding:1px 3px}
+th{font-weight:600}
+input{width:100%;box-sizing:border-box;border:none;background:transparent;color:inherit;font-size:13px;padding:6px 2px}
+input.num{text-align:right}
+.del{color:#e55;cursor:pointer;text-align:center;user-select:none}
+#tot{margin:10px 0;font-weight:600}
+button{font-size:15px;border-radius:8px;border:none;padding:10px;margin-top:6px;width:100%}
+#add{background:var(--tg-theme-secondary-bg-color,#eee);color:inherit}
+#save{background:var(--tg-theme-button-color,#2ea6ff);color:var(--tg-theme-button-text-color,#fff)}
+</style></head><body>
+<h3>🧾 แก้ไขใบเสร็จ</h3>
+<div class=fld>ร้าน: <input id=shop placeholder=ชื่อร้าน></div>
+<table><thead><tr><th>รายการ</th><th>จำ</th><th>ราคา</th><th>kcal</th><th></th></tr></thead><tbody id=tb></tbody></table>
+<button id=add>+ เพิ่มแถว</button>
+<div class=fld>👥 จำนวนคน: <input id=people class=num type=number min=1 style="width:70px;border:1px solid #ccc;border-radius:6px"></div>
+<div id=tot></div>
+<button id=save>บันทึก ✅</button>
+<script>
+const tg=Telegram.WebApp;tg.expand();tg.ready();
+let dt=null;
+function row(it={}){const tr=document.createElement('tr');
+tr.innerHTML='<td><input class=name></td><td><input class="num qty" type=number></td><td><input class="num price" type=number></td><td><input class="num kcal" type=number></td><td class=del>🗑️</td>';
+tr.querySelector('.name').value=it.name||'';tr.querySelector('.qty').value=it.qty==null?1:it.qty;tr.querySelector('.price').value=it.price==null?'':it.price;tr.querySelector('.kcal').value=it.kcal==null?'':it.kcal;
+tr.querySelector('.del').onclick=()=>{tr.remove();calc()};
+tr.querySelectorAll('input').forEach(i=>i.oninput=calc);document.getElementById('tb').appendChild(tr);}
+function num(v){return v===''||v==null?null:+v}
+function collect(){const items=[...document.querySelectorAll('#tb tr')].map(tr=>({name:tr.querySelector('.name').value,qty:num(tr.querySelector('.qty').value)||1,price:num(tr.querySelector('.price').value),kcal:num(tr.querySelector('.kcal').value)}));
+const people=+document.getElementById('people').value||1;
+const total_price=items.reduce((s,i)=>s+(i.price||0),0),total_kcal=items.reduce((s,i)=>s+(i.kcal||0),0);
+return{shop:document.getElementById('shop').value,datetime:dt&&dt.datetime,people,items,total_price,total_kcal};}
+function calc(){const d=collect();let t='ยอด ฿'+d.total_price+' · '+d.total_kcal+' kcal';if(d.people>1)t+=' | 👥 คุณ ฿'+Math.round(d.total_price/d.people)+' · '+Math.round(d.total_kcal/d.people)+' kcal';document.getElementById('tot').textContent=t;}
+async function api(action,data){const r=await fetch('/api/receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData:tg.initData,action,data})});return r.json();}
+document.getElementById('add').onclick=()=>{row();calc()};
+document.getElementById('save').onclick=async()=>{const b=document.getElementById('save');b.disabled=true;b.textContent='กำลังบันทึก...';await api('save',collect());tg.close();};
+(async()=>{const res=await api('get');dt=res.draft||{items:[]};document.getElementById('shop').value=dt.shop||'';document.getElementById('people').value=dt.people||1;(dt.items||[]).forEach(row);if(!(dt.items||[]).length)row();calc();})();
+</script></body></html>`
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
@@ -363,6 +429,25 @@ export default {
       }
       try { await handleTelegram(await request.json(), env) } catch (e) { /* always 200 to Telegram */ }
       return new Response('ok')
+    }
+
+    // ── /edit ── Mini App หน้าตารางแก้ใบเสร็จ
+    if (path === '/edit') {
+      return new Response(EDIT_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    }
+
+    // ── /api/receipt ── get/save draft จาก Mini App (ตรวจ initData)
+    if (path === '/api/receipt' && request.method === 'POST') {
+      const { initData, action, data } = await request.json()
+      const user = await validateInit(initData, env.TELEGRAM_BOT_TOKEN)
+      if (!user || user.id !== OWNER_CHAT_ID) return cors(JSON.stringify({ error: 'forbidden' }), 403)
+      if (action === 'get') return cors(JSON.stringify({ draft: await loadDraft(env, user.id) }))
+      if (action === 'save') {
+        await saveDraft(env, user.id, data)
+        await tgSend(env.TELEGRAM_BOT_TOKEN, user.id, renderReceipt(data) + '\n✅ แก้จากตารางแล้ว', EDIT_BTN)
+        return cors(JSON.stringify({ ok: true }))
+      }
+      return cors(JSON.stringify({ error: 'bad action' }), 400)
     }
 
     // ── /oura/* ── proxy to Oura v2 API

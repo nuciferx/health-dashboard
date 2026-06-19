@@ -139,19 +139,39 @@ def fetch_oura(token, today):
     start = (today - timedelta(days=8)).isoformat()
     end = today.isoformat()
     out = {"readiness": None, "sleep_score": None, "sleep_h": None,
-           "hrv": None, "hrv_avg7": None, "rhr": None, "rhr_avg7": None}
+           "hrv": None, "hrv_avg7": None, "rhr": None, "rhr_avg7": None,
+           "stress_summary": None, "recovery_min": None, "resilience": None,
+           "contrib": {}}
+    iso = today.isoformat()
 
-    # Readiness (วันนี้)
+    # Readiness + contributors (วันนี้)
     rd = oura_get(token, "daily_readiness", start, end)
     for x in rd:
-        if x.get("day") == today.isoformat():
+        if x.get("day") == iso:
             out["readiness"] = x.get("score")
+            out["contrib"].update(x.get("contributors") or {})
 
-    # Sleep score (วันนี้)
+    # Sleep score + contributors (วันนี้)
     ds = oura_get(token, "daily_sleep", start, end)
     for x in ds:
-        if x.get("day") == today.isoformat():
+        if x.get("day") == iso:
             out["sleep_score"] = x.get("score")
+            out["contrib"].update(x.get("contributors") or {})
+
+    # Stress (Oura — cloud-native) + Resilience
+    try:
+        for x in oura_get(token, "daily_stress", start, end):
+            if x.get("day") == iso:
+                out["stress_summary"] = x.get("day_summary")
+                out["recovery_min"] = round((x.get("recovery_high") or 0) / 60) or None
+    except Exception:
+        pass
+    try:
+        for x in oura_get(token, "daily_resilience", start, end):
+            if x.get("day") == iso:
+                out["resilience"] = x.get("level")
+    except Exception:
+        pass
 
     # Sleep sessions (duration, HRV, RHR) — เลือก long_sleep ต่อวัน
     sl = oura_get(token, "sleep", start, end)
@@ -336,56 +356,82 @@ THAI_MON = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค."
             "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
 
 
+CONTRIB_LABELS = {
+    "rem_sleep": "REM", "deep_sleep": "deep", "total_sleep": "ระยะนอน",
+    "efficiency": "eff นอน", "restfulness": "นอนนิ่ง", "latency": "latency", "timing": "timing",
+    "recovery_index": "recovery idx", "hrv_balance": "HRV balance", "sleep_balance": "สมดุลนอน",
+    "body_temperature": "อุณหภูมิ", "resting_heart_rate": "RHR", "activity_balance": "activity bal",
+    "previous_night": "คืนก่อน", "sleep_regularity": "สม่ำเสมอ", "previous_day_activity": "กิจกรรมเมื่อวาน",
+}
+
+
+def weak_points(contrib, n=2, thresh=60):
+    """คืนจุดอ่อนเด่น (contributor ต่ำสุด < thresh) เป็นข้อความพร้อมธงสี"""
+    items = sorted(((k, v) for k, v in contrib.items()
+                    if isinstance(v, (int, float)) and v < thresh), key=lambda kv: kv[1])
+    out = []
+    for k, v in items[:n]:
+        out.append(f"{CONTRIB_LABELS.get(k, k)} {round(v)}{'🔴' if v < 40 else '🟡'}")
+    return out
+
+
 def build_message(today, oura, activity, plan, gwell=None):
     days_left = (RACE_DATE - today).days
     L = []
     L.append(f"🌅 {THAI_DOW[today.weekday()]} {today.day} {THAI_MON[today.month]} — เหลือ {days_left} วัน CM6 i2")
     L.append("")
 
-    # 😴 นอน/ฟื้นตัว
     flags = []
+    # บรรทัด 1: นอน · HRV · RHR
+    r1 = []
     if oura["sleep_h"] is not None:
-        warn = " 🔴" if oura["sleep_h"] < 7 else " ✅"
-        L.append(f"😴 นอน {oura['sleep_h']} ชม.{warn}  (เป้า 7)")
+        r1.append(f"😴 นอน {oura['sleep_h']}h" + (" 🔴" if oura["sleep_h"] < 7 else " ✅"))
         if oura["sleep_h"] < 7:
             flags.append("นอนน้อย")
-    else:
-        L.append("😴 นอน: n/a")
-
     if oura["hrv"] is not None:
-        L.append(f"💗 HRV {oura['hrv']}{arrow(oura['hrv'], oura['hrv_avg7'])}  (avg7 {oura['hrv_avg7'] or '–'})")
+        r1.append(f"💗 HRV {oura['hrv']}{arrow(oura['hrv'], oura['hrv_avg7'])}")
     if oura["rhr"] is not None:
-        L.append(f"❤️ RHR {oura['rhr']}{arrow(oura['rhr'], oura['rhr_avg7'])}  (avg7 {oura['rhr_avg7'] or '–'})")
+        r1.append(f"❤️ RHR {oura['rhr']}{arrow(oura['rhr'], oura['rhr_avg7'])}")
+    if r1:
+        L.append(" · ".join(r1))
 
+    # บรรทัด 2: Readiness · Resilience
+    r2 = []
     if oura["readiness"] is not None:
         if oura["readiness"] < 55:
-            rflag = " 🔴 พัก/เดินเบา"
-            flags.append("readiness ต่ำ")
+            rf = " 🔴 พัก"; flags.append("readiness ต่ำ")
         elif oura["readiness"] < 70:
-            rflag = " 🟡"
+            rf = " 🟡"
         else:
-            rflag = " ✅"
-        L.append(f"💚 Readiness {oura['readiness']}{rflag}")
-    if oura["sleep_score"] is not None:
-        L.append(f"🛌 Sleep score {oura['sleep_score']}")
+            rf = " ✅"
+        r2.append(f"💚 Readiness {oura['readiness']}{rf}")
+    if oura.get("resilience"):
+        r2.append(f"🧘 Resilience {oura['resilience']}")
+    if r2:
+        L.append(" · ".join(r2))
 
-    # 🔋 Garmin wellness (token-based — ใช้ได้บน cloud)
-    if gwell and "error" not in gwell:
-        parts = []
-        bb = gwell.get("body_battery")
-        if bb is not None:
-            bmark = " 🔴" if bb < 30 else (" 🟡" if bb < 50 else " ✅")
-            parts.append(f"🔋 Body Battery {bb}{bmark}")
-        sv = gwell.get("stress_avg")
-        if sv is not None:
-            smark = " 🔴" if sv > 60 else (" 🟡" if sv > 50 else " ✅")
-            parts.append(f"😰 Stress(เมื่อวาน) {sv}{smark}")
-            if sv > 60:
-                flags.append("stress สูง")
-        if parts:
-            L.append("  ·  ".join(parts))
-        if bb is not None and bb < 30:
+    # บรรทัด 3: Stress (Oura) · Body Battery (Garmin)
+    r3 = []
+    ss = oura.get("stress_summary")
+    if ss:
+        smap = {"restored": ("ฟื้นตัวดี", " ✅"), "normal": ("normal", " ✅"), "stressful": ("เครียด", " 🔴")}
+        txt, mk = smap.get(ss, (ss, ""))
+        rec = oura.get("recovery_min")
+        r3.append(f"😰 Stress {txt}{f' (ฟื้น {rec}น)' if rec else ''}{mk}")
+        if ss == "stressful":
+            flags.append("stress สูง")
+    if gwell and "error" not in gwell and gwell.get("body_battery") is not None:
+        bb = gwell["body_battery"]
+        r3.append(f"🔋 BodyBatt {bb}" + (" 🔴" if bb < 30 else (" 🟡" if bb < 50 else " ✅")))
+        if bb < 30:
             flags.append("body battery ต่ำ")
+    if r3:
+        L.append(" · ".join(r3))
+
+    # บรรทัด 4: จุดอ่อนเด่น (auto จาก Oura contributors)
+    weak = weak_points(oura.get("contrib") or {})
+    if weak:
+        L.append("🔎 จุดอ่อน: " + " · ".join(weak))
 
     L.append("")
 

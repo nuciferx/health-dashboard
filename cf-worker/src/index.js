@@ -188,17 +188,14 @@ async function tgSend(token, chatId, text) {
     body: JSON.stringify({ chat_id: chatId, text }),
   })
 }
-const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '📸 ส่งรูปอาหาร — AI วิเคราะห์แคล/มาโคร (โหมดทดสอบ)', '/token — สรุป token + ค่าใช้จ่าย Gemini', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
+const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '🧾 ส่งรูปใบเสร็จ — ดึงรายการ+ราคา+แคล (โหมดทดสอบ)', '/token — สรุป token + ค่าใช้จ่าย Gemini', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
 
 // ── รูปอาหาร → Gemini Vision (โหมดทดสอบ: ยังไม่บันทึก log) ───────────
 async function analyzeMeal(env, b64, caption) {
-  const prompt = `คุณคือนักโภชนาการที่แม่นยำ ช่วยนักวิ่งเทรลลดน้ำหนัก (95→เป้า 90-91 กก.).
-ดูรูปนี้อย่างละเอียดก่อนประเมิน:
-1) อ่านตัวอักษร/แบรนด์บนแก้ว/บรรจุภัณฑ์ถ้ามี
-2) ถ้าเป็นเครื่องดื่ม: ดูสี — "ใส/โปร่งแสง" = กาแฟดำ/ชา/โทนิค (ไม่มีนม ไขมัน~0) · "ขุ่น/สีครีม" = มีนม
-3) ห้ามเดาท็อปปิ้ง/ส่วนผสมที่มองไม่เห็นชัด (ฟองบนกาแฟดำ = crema ไม่ใช่ครีม)
-4) ถ้าไม่ชัดว่าหวานไหม ประเมินแบบไม่หวาน แล้วระบุในสมมติฐาน${caption ? '\nผู้ใช้ระบุ (เชื่อถือเป็นหลัก): ' + caption : ''}
-ตอบ JSON ล้วน ไม่มีข้อความอื่น: {"food":"ชื่อไทยสั้นๆ","kcal":number,"protein":number,"carb":number,"fat":number,"confidence":"สูง|กลาง|ต่ำ","assume":"สมมติฐานสั้นๆ","tip":"คำแนะนำลดน้ำหนักสั้นๆ"}`
+  const prompt = `อ่านใบเสร็จในรูปนี้ ดึงข้อมูลตามจริงจากใบเสร็จ ห้ามแสดงความคิดเห็น/คำแนะนำ${caption ? '\nหมายเหตุผู้ใช้: ' + caption : ''}
+ตอบ JSON ล้วน ไม่มีข้อความอื่น: {"shop":"ชื่อร้าน","datetime":"วันเวลาถ้ามี","items":[{"name":"ชื่อรายการ","qty":number,"price":number,"kcal":number}],"total_price":number,"total_kcal":number}
+- name/qty/price อ่านจากใบเสร็จตามจริง อ่านไม่ออกใส่ null
+- kcal ประเมินจากชื่อรายการอาหาร (ตัวเลขเฉยๆ ไม่ต้องอธิบาย); รายการที่ไม่ใช่อาหารใส่ kcal:null`
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${env.GEMINI_KEY}`
   const body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }] }] }
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -208,14 +205,22 @@ async function analyzeMeal(env, b64, caption) {
   const usage = { in: um.promptTokenCount || 0, out: um.candidatesTokenCount || 0, total: um.totalTokenCount || 0 }
   const txt = j.candidates?.[0]?.content?.parts?.[0]?.text || ''
   const m = txt.match(/\{[\s\S]*\}/)
-  if (!m) return { text: '📸 อ่านผลไม่ได้:\n' + txt.slice(0, 300), usage }
+  if (!m) return { text: '🧾 อ่านใบเสร็จไม่ออก ลองถ่ายให้ชัด/ตรงขึ้น', usage }
   let d
-  try { d = JSON.parse(m[0]) } catch (e) { return { text: '📸 อ่านผลไม่ได้ (parse)', usage } }
-  const L = ['📸 มื้อนี้ — 🧪 โหมดทดสอบ (ยังไม่บันทึก)', `🍽️ ${d.food || '?'}`,
-    `≈ ${d.kcal ?? '?'} kcal  ·  P ${d.protein ?? '?'}g · C ${d.carb ?? '?'}g · F ${d.fat ?? '?'}g`]
-  if (d.confidence || d.assume) L.push(`🎯 มั่นใจ: ${d.confidence || '?'}${d.assume ? ` · สมมติ: ${d.assume}` : ''}`)
-  if (d.tip) L.push(`💡 ${d.tip}`)
-  L.push('✏️ ไม่ตรง? ส่งรูปใหม่พร้อมแคปชั่นชื่ออาหาร เช่น "อเมริกาโน่ดำ ไม่หวาน"')
+  try { d = JSON.parse(m[0]) } catch (e) { return { text: '🧾 อ่านใบเสร็จไม่ออก (parse)', usage } }
+  const items = Array.isArray(d.items) ? d.items : []
+  if (!items.length) return { text: '🧾 อ่านใบเสร็จไม่ออก ลองถ่ายให้ชัดขึ้น', usage }
+  const L = ['🧾 ใบเสร็จ — 🧪 โหมดทดสอบ (ยังไม่บันทึก)']
+  const head = [d.shop, d.datetime].filter(Boolean).join(' · ')
+  if (head) L.push(head)
+  for (const it of items) {
+    const q = it.qty && it.qty > 1 ? ` x${it.qty}` : ''
+    const price = it.price != null ? ` — ฿${it.price}` : ''
+    const kc = it.kcal != null ? ` (${it.kcal} kcal)` : ''
+    L.push(`• ${it.name || '?'}${q}${price}${kc}`)
+  }
+  const tp = d.total_price != null ? `฿${d.total_price}` : '?'
+  L.push(`รวม: ${tp}${d.total_kcal != null ? ` · ${d.total_kcal} kcal` : ''}`)
   return { text: L.join('\n'), usage }
 }
 
@@ -247,7 +252,7 @@ async function tokenSummary(env) {
 
 async function handlePhoto(msg, env) {
   const token = env.TELEGRAM_BOT_TOKEN
-  await tgSend(token, msg.chat.id, '🔍 กำลังวิเคราะห์รูปอาหาร...')
+  await tgSend(token, msg.chat.id, '🔍 กำลังอ่านใบเสร็จ...')
   try {
     const photos = msg.photo
     const fileId = photos[photos.length - 1].file_id          // ใหญ่สุด
@@ -266,7 +271,7 @@ async function handlePhoto(msg, env) {
     }
     await tgSend(token, msg.chat.id, reply)
   } catch (e) {
-    await tgSend(token, msg.chat.id, '📸 ขออภัย วิเคราะห์รูปไม่สำเร็จ ลองใหม่อีกครั้ง')
+    await tgSend(token, msg.chat.id, '🧾 ขออภัย อ่านใบเสร็จไม่สำเร็จ ลองใหม่อีกครั้ง')
   }
 }
 

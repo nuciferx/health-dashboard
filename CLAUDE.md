@@ -29,12 +29,14 @@
 | **Oura** (`OURA_TOKEN`) | นอน/HRV/RHR/readiness (ใส่ตอนนอน) | ✅ REST API เสถียรมาก — ดึงได้ทั้ง local + CI |
 | **Strava API** (`STRAVA_CLIENT_ID/SECRET/REFRESH_TOKEN`) | activity (cloud!) — Garmin sync เข้า Strava อัตโนมัติ | ✅ ดึงจาก cloud ได้ (OAuth refresh token) — **แหล่ง activity หลักของ digest** |
 | **Strava MCP** (`mcp__claude_ai_Strava__*`) | activity เต็ม HR/stream/zone | ✅ ใช้ตอนคุยกับ Claude (/health) |
-| **Garmin FR255** (`GARMIN_EMAIL`/`PASSWORD`) | VO2max/training-status/body-battery | ⚠️ **login ได้เฉพาะ local (IP บ้าน)** — cloud โดนบล็อก 429/403 เสมอ → ใช้ผ่าน /health on-demand |
+| **Garmin FR255** (`GARMIN_TOKENS`) | stress / body battery / RHR กลางวัน / VO2max | ✅ **cloud ได้ผ่าน token!** (login-รหัสโดนบล็อก แต่ token-resume ผ่าน) |
 
-> ⚠️ **สำคัญ:** Garmin **ดึงจาก cloud ไม่ได้** (ยืนยันแล้ว). digest/worker ใช้ **Strava API** เป็นแหล่ง activity (Garmin ป้อนเข้า Strava ให้เอง). Garmin-only wellness (VO2max/training status) ดึงผ่าน /health กับ Claude เท่านั้น
+> ⚠️ **Garmin trick:** login ด้วย email/password จาก cloud โดนบล็อก 429/403 — **แต่** login ด้วย token (จาก `client.dumps()` ที่ดึง local) **ผ่าน** ทั้ง local + cloud. digest ใช้ `GARMIN_TOKENS` ดึง stress(เมื่อวาน) + body battery(เช้านี้). Activity ใช้ Strava (Garmin → Strava → อ่าน). VO2max/training-status ลึก ๆ ดึงผ่าน /health.
+>
+> 🔑 **token หมดอายุ ~1 ปี** (oauth1) — ถ้าวันไหน stress/body battery หาย ให้ re-dump: `python` → `Garmin(email,pw).login()` → `client.dumps()` → `gh secret set GARMIN_TOKENS`
 
 ## Secrets
-- **GitHub Actions** (สำหรับ digest): `OURA_TOKEN`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REFRESH_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `GARMIN_EMAIL`, `GARMIN_PASSWORD`
+- **GitHub Actions** (สำหรับ digest): `OURA_TOKEN`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REFRESH_TOKEN`, `GARMIN_TOKENS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
 - **Local** `.env`: `OURA_TOKEN`, `GARMIN_EMAIL`, `GARMIN_PASSWORD` (+ `SHEET_ID`, `GCP_SA_KEY` legacy)
 - **Cloudflare** worker `health-proxy` (`cf-worker/`): `OURA_TOKEN`, `GEMINI_KEY` — proxy ให้ dashboard เก่า `index.html`
 - ตั้ง GitHub secret: `printf '%s' "<val>" | gh secret set <NAME>` (ต้อง `gh auth login` ก่อน)

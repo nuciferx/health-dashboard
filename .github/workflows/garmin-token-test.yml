@@ -1,0 +1,38 @@
+name: Garmin Token Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install garminconnect
+      - name: Try token-only Garmin from cloud
+        env:
+          GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime, timedelta
+          from garminconnect import Garmin
+          g = Garmin()
+          try:
+              g.login(os.environ["GARMIN_TOKENS"])
+              print("LOGIN_OK (token-only, no password)")
+          except Exception as e:
+              print("LOGIN_FAIL:", str(e)[:200]); raise SystemExit(0)
+          d = datetime.now().strftime("%Y-%m-%d")
+          for off in (0, 1):
+              day = (datetime.now() - timedelta(days=off)).strftime("%Y-%m-%d")
+              try:
+                  st = g.get_stress_data(day)
+                  hr = g.get_heart_rates(day)
+                  print(f"{day}: stress_avg={st.get('avgStressLevel')} rhr={hr.get('restingHeartRate')}")
+              except Exception as e:
+                  print(f"{day}: FETCH_FAIL", str(e)[:150])
+          PY

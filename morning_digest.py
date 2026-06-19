@@ -182,17 +182,67 @@ def fetch_oura(token, today):
     return out
 
 
-# ── Garmin (best-effort) ────────────────────────────────────────────────
-def fetch_garmin():
-    """คืน dict activity ล่าสุด หรือ {'error': ...}"""
-    email = os.environ.get("GARMIN_EMAIL")
-    password = os.environ.get("GARMIN_PASSWORD")
-    if not (email and password):
-        return {"error": "no-credentials"}
+# ── Garmin ──────────────────────────────────────────────────────────────
+# Garmin บล็อก login-ด้วยรหัส จาก cloud (429/403) แต่ login-ด้วย token ผ่านได้
+# → GARMIN_TOKENS (จาก client.dumps() ที่ดึง local) ทำงานทั้ง local + cloud
+def garmin_login():
+    from garminconnect import Garmin
+    tokens = os.environ.get("GARMIN_TOKENS")
+    if tokens:
+        g = Garmin()
+        g.login(tokens)            # token-only (ใช้ได้บน cloud)
+        return g
+    email, password = os.environ.get("GARMIN_EMAIL"), os.environ.get("GARMIN_PASSWORD")
+    if email and password:
+        g = Garmin(email, password)
+        g.login()                  # password (local เท่านั้น)
+        return g
+    return None
+
+
+def fetch_garmin_wellness():
+    """ดึง stress (เมื่อวาน) + body battery (เช้านี้) + RHR กลางวัน. คืน dict หรือ {'error':...}"""
     try:
-        from garminconnect import Garmin
-        c = Garmin(email, password)
-        c.login()
+        g = garmin_login()
+        if not g:
+            return {"error": "no-credentials"}
+        today = datetime.now(ICT).date()
+        yday = (today - timedelta(days=1)).isoformat()
+        tstr = today.isoformat()
+        out = {}
+        # stress เมื่อวาน (เต็มวัน)
+        try:
+            st = g.get_stress_data(yday)
+            avg = st.get("avgStressLevel")
+            out["stress_avg"] = avg if (avg is not None and avg >= 0) else None
+        except Exception:
+            pass
+        # body battery เช้านี้ (ค่าล่าสุด = ชาร์จหลังนอน)
+        try:
+            bb = g.get_body_battery(tstr)
+            if bb and isinstance(bb, list) and bb[0]:
+                vals = [v[1] for v in bb[0].get("bodyBatteryValuesArray", []) if isinstance(v, list) and len(v) > 1 and v[1] is not None]
+                if vals:
+                    out["body_battery"] = vals[-1]
+        except Exception:
+            pass
+        # RHR กลางวัน (Garmin)
+        try:
+            hr = g.get_heart_rates(tstr)
+            out["rhr_day"] = hr.get("restingHeartRate")
+        except Exception:
+            pass
+        return out if out else {"error": "no-data"}
+    except Exception as e:
+        return {"error": str(e)[:80]}
+
+
+def fetch_garmin():
+    """คืน dict activity ล่าสุด หรือ {'error': ...} (fallback เมื่อ Strava ไม่พร้อม)"""
+    try:
+        c = garmin_login()
+        if not c:
+            return {"error": "no-credentials"}
         acts = c.get_activities(0, 1)
         if not acts:
             return {"error": "no-activity"}
@@ -286,7 +336,7 @@ THAI_MON = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค."
             "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
 
 
-def build_message(today, oura, activity, plan):
+def build_message(today, oura, activity, plan, gwell=None):
     days_left = (RACE_DATE - today).days
     L = []
     L.append(f"🌅 {THAI_DOW[today.weekday()]} {today.day} {THAI_MON[today.month]} — เหลือ {days_left} วัน CM6 i2")
@@ -318,6 +368,24 @@ def build_message(today, oura, activity, plan):
         L.append(f"💚 Readiness {oura['readiness']}{rflag}")
     if oura["sleep_score"] is not None:
         L.append(f"🛌 Sleep score {oura['sleep_score']}")
+
+    # 🔋 Garmin wellness (token-based — ใช้ได้บน cloud)
+    if gwell and "error" not in gwell:
+        parts = []
+        bb = gwell.get("body_battery")
+        if bb is not None:
+            bmark = " 🔴" if bb < 30 else (" 🟡" if bb < 50 else " ✅")
+            parts.append(f"🔋 Body Battery {bb}{bmark}")
+        sv = gwell.get("stress_avg")
+        if sv is not None:
+            smark = " 🔴" if sv > 60 else (" 🟡" if sv > 50 else " ✅")
+            parts.append(f"😰 Stress(เมื่อวาน) {sv}{smark}")
+            if sv > 60:
+                flags.append("stress สูง")
+        if parts:
+            L.append("  ·  ".join(parts))
+        if bb is not None and bb < 30:
+            flags.append("body battery ต่ำ")
 
     L.append("")
 
@@ -384,10 +452,11 @@ def main():
     today = datetime.now(ICT).date()
     oura = fetch_oura(token, today)
     strava = fetch_strava()
-    garmin = fetch_garmin() if "error" in strava else None  # fallback เฉพาะตอน Strava ไม่พร้อม (local)
+    garmin = fetch_garmin() if "error" in strava else None  # fallback เฉพาะตอน Strava ไม่พร้อม
     activity = pick_activity(strava, garmin)
+    gwell = fetch_garmin_wellness()                         # stress + body battery (token-based)
     plan = plan_for(today)
-    msg = build_message(today, oura, activity, plan)
+    msg = build_message(today, oura, activity, plan, gwell)
 
     tg_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     tg_chat = os.environ.get("TELEGRAM_CHAT_ID")

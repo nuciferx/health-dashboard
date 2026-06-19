@@ -49,6 +49,8 @@ def main():
 
     rd = {x["day"]: x for x in oura(token, "daily_readiness", start, end)}
     ds = {x["day"]: x for x in oura(token, "daily_sleep", start, end)}
+    stress = {x["day"]: x for x in oura(token, "daily_stress", start, end)}
+    resil = {x["day"]: x for x in oura(token, "daily_resilience", start, end)}
     sl_raw = oura(token, "sleep", start, end)
     sl = {}
     for s in sl_raw:
@@ -61,6 +63,8 @@ def main():
     for d in all_days:
         s = sl.get(d, {})
         dur = s.get("total_sleep_duration")
+        rc = (rd.get(d) or {}).get("contributors") or {}
+        sc = (ds.get(d) or {}).get("contributors") or {}
         rows.append({
             "date": d,
             "readiness": (rd.get(d) or {}).get("score"),
@@ -71,6 +75,12 @@ def main():
             "resp": s.get("average_breath"),
             "efficiency": s.get("efficiency"),
             "temp_dev": (rd.get(d) or {}).get("temperature_deviation"),
+            "stress": (stress.get(d) or {}).get("day_summary"),
+            "resilience": (resil.get(d) or {}).get("level"),
+            "rem_contrib": sc.get("rem_sleep"),
+            "deep_contrib": sc.get("deep_sleep"),
+            "recovery_idx": rc.get("recovery_index"),
+            "hrv_balance": rc.get("hrv_balance"),
         })
 
     print(json.dumps({

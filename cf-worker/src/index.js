@@ -17,6 +17,9 @@ function cors(body, status = 200, extra = {}) {
 }
 
 const OWNER_CHAT_ID = 957180305          // ตอบเฉพาะเจ้าของ
+// เรต Gemini 3 Flash (USD ต่อ 1M token) + อัตราแลกเปลี่ยน — ปรับได้
+const GEM_IN_USD = 0.50, GEM_OUT_USD = 3.00, USD_THB = 35
+const costTHB = (u) => ((u.in / 1e6) * GEM_IN_USD + (u.out / 1e6) * GEM_OUT_USD) * USD_THB
 const RACE_ISO = '2026-08-08'
 const EASY_HR_CAP = 150
 const ZONES = [[130, 148, 'Z2'], [149, 160, 'Z3'], [161, 172, 'Z4']]
@@ -185,7 +188,7 @@ async function tgSend(token, chatId, text) {
     body: JSON.stringify({ chat_id: chatId, text }),
   })
 }
-const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '📸 ส่งรูปอาหาร — AI วิเคราะห์แคล/มาโคร (โหมดทดสอบ)', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
+const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '📸 ส่งรูปอาหาร — AI วิเคราะห์แคล/มาโคร (โหมดทดสอบ)', '/token — สรุป token + ค่าใช้จ่าย Gemini', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
 
 // ── รูปอาหาร → Gemini Vision (โหมดทดสอบ: ยังไม่บันทึก log) ───────────
 async function analyzeMeal(env, b64, caption) {
@@ -195,18 +198,45 @@ async function analyzeMeal(env, b64, caption) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${env.GEMINI_KEY}`
   const body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }] }] }
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  if (!r.ok) return `📸 วิเคราะห์ไม่ได้ (Gemini ${r.status})`
+  if (!r.ok) return { text: `📸 วิเคราะห์ไม่ได้ (Gemini ${r.status})`, usage: null }
   const j = await r.json()
+  const um = j.usageMetadata || {}
+  const usage = { in: um.promptTokenCount || 0, out: um.candidatesTokenCount || 0, total: um.totalTokenCount || 0 }
   const txt = j.candidates?.[0]?.content?.parts?.[0]?.text || ''
   const m = txt.match(/\{[\s\S]*\}/)
-  if (!m) return '📸 อ่านผลไม่ได้:\n' + txt.slice(0, 300)
+  if (!m) return { text: '📸 อ่านผลไม่ได้:\n' + txt.slice(0, 300), usage }
   let d
-  try { d = JSON.parse(m[0]) } catch (e) { return '📸 อ่านผลไม่ได้ (parse)' }
+  try { d = JSON.parse(m[0]) } catch (e) { return { text: '📸 อ่านผลไม่ได้ (parse)', usage } }
   const L = ['📸 มื้อนี้ — 🧪 โหมดทดสอบ (ยังไม่บันทึก)', `🍽️ ${d.food || '?'}`,
     `≈ ${d.kcal ?? '?'} kcal  ·  P ${d.protein ?? '?'}g · C ${d.carb ?? '?'}g · F ${d.fat ?? '?'}g`]
   if (d.flag) L.push(`• ${d.flag}`)
   if (d.tip) L.push(`💡 ${d.tip}`)
-  L.push('', '(ทดสอบอยู่ — ยังไม่เก็บเป็นข้อมูลจริง)')
+  return { text: L.join('\n'), usage }
+}
+
+async function recordTokens(env, u, thb) {
+  if (!env.STATS) return
+  const raw = await env.STATS.get('meal_tokens')
+  const s = raw ? JSON.parse(raw) : { count: 0, in: 0, out: 0, total: 0, thb: 0, items: [] }
+  s.count++; s.in += u.in; s.out += u.out; s.total += u.total; s.thb += thb
+  s.items.push({ total: u.total, thb: Number(thb.toFixed(4)) })
+  if (s.items.length > 50) s.items = s.items.slice(-50)
+  await env.STATS.put('meal_tokens', JSON.stringify(s))
+}
+
+async function tokenSummary(env) {
+  if (!env.STATS) return '📊 ยังไม่ได้ตั้ง storage'
+  const raw = await env.STATS.get('meal_tokens')
+  if (!raw) return '📊 ยังไม่มีการวิเคราะห์รูปอาหาร'
+  const s = JSON.parse(raw)
+  const L = ['📊 สรุปการใช้ Gemini (รูปอาหาร)',
+    `รูปทั้งหมด: ${s.count} รูป`,
+    `โทเค็นรวม: ${s.total.toLocaleString()} (in ${s.in.toLocaleString()} · out ${s.out.toLocaleString()})`,
+    `💰 ค่าใช้จ่ายรวม: ฿${s.thb.toFixed(2)}`,
+    `เฉลี่ย/รูป: ${Math.round(s.total / s.count).toLocaleString()} tok · ฿${(s.thb / s.count).toFixed(2)}`,
+    '', '🖼️ รายรูปล่าสุด:']
+  s.items.slice(-10).forEach((it, i) => L.push(`${i + 1}. ${it.total.toLocaleString()} tok · ฿${it.thb.toFixed(2)}`))
+  L.push('', `เรต: in $${GEM_IN_USD}/1M · out $${GEM_OUT_USD}/1M · ฿${USD_THB}/$`)
   return L.join('\n')
 }
 
@@ -222,7 +252,14 @@ async function handlePhoto(msg, env) {
     let bin = ''
     for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i])
     const b64 = btoa(bin)
-    await tgSend(token, msg.chat.id, await analyzeMeal(env, b64, msg.caption || ''))
+    const res = await analyzeMeal(env, b64, msg.caption || '')
+    let reply = res.text
+    if (res.usage && res.usage.total) {
+      const thb = costTHB(res.usage)
+      reply += `\n\n🪙 ${res.usage.total.toLocaleString()} tokens (in ${res.usage.in}/out ${res.usage.out}) · ฿${thb.toFixed(2)}`
+      await recordTokens(env, res.usage, thb)
+    }
+    await tgSend(token, msg.chat.id, reply)
   } catch (e) {
     await tgSend(token, msg.chat.id, '📸 ขออภัย วิเคราะห์รูปไม่สำเร็จ ลองใหม่อีกครั้ง')
   }
@@ -247,6 +284,8 @@ async function handleTelegram(update, env) {
     await tgSend(token, msg.chat.id, [header(today), '', ...L].join('\n'))
   } else if (cmd === '/plan') {
     await tgSend(token, msg.chat.id, [header(today), '', ...planLines(planFor(today))].join('\n'))
+  } else if (cmd === '/token') {
+    await tgSend(token, msg.chat.id, await tokenSummary(env))
   } else {
     await tgSend(token, msg.chat.id, HELP)
   }

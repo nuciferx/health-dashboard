@@ -1,3 +1,7 @@
 name = "health-proxy"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
+
+[[kv_namespaces]]
+binding = "STATS"
+id = "98f0afee46464354b075755e090a8616"

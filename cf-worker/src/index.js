@@ -185,12 +185,55 @@ async function tgSend(token, chatId, text) {
     body: JSON.stringify({ chat_id: chatId, text }),
   })
 }
-const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
+const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '📸 ส่งรูปอาหาร — AI วิเคราะห์แคล/มาโคร (โหมดทดสอบ)', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
+
+// ── รูปอาหาร → Gemini Vision (โหมดทดสอบ: ยังไม่บันทึก log) ───────────
+async function analyzeMeal(env, b64, caption) {
+  const prompt = `คุณคือนักโภชนาการช่วยนักวิ่งเทรลที่ต้องการลดน้ำหนัก (95→เป้า 90-91 กก.).` +
+    ` วิเคราะห์รูปอาหารนี้${caption ? ' (ผู้ใช้ระบุ: ' + caption + ')' : ''}.` +
+    ` ตอบเป็น JSON ล้วน ไม่มีข้อความอื่น: {"food":"ชื่ออาหารไทยสั้นๆ","kcal":number,"protein":number,"carb":number,"fat":number,"flag":"ข้อสังเกตสั้นๆ","tip":"คำแนะนำสั้นๆเพื่อลดน้ำหนัก"}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${env.GEMINI_KEY}`
+  const body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }] }] }
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  if (!r.ok) return `📸 วิเคราะห์ไม่ได้ (Gemini ${r.status})`
+  const j = await r.json()
+  const txt = j.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  const m = txt.match(/\{[\s\S]*\}/)
+  if (!m) return '📸 อ่านผลไม่ได้:\n' + txt.slice(0, 300)
+  let d
+  try { d = JSON.parse(m[0]) } catch (e) { return '📸 อ่านผลไม่ได้ (parse)' }
+  const L = ['📸 มื้อนี้ — 🧪 โหมดทดสอบ (ยังไม่บันทึก)', `🍽️ ${d.food || '?'}`,
+    `≈ ${d.kcal ?? '?'} kcal  ·  P ${d.protein ?? '?'}g · C ${d.carb ?? '?'}g · F ${d.fat ?? '?'}g`]
+  if (d.flag) L.push(`• ${d.flag}`)
+  if (d.tip) L.push(`💡 ${d.tip}`)
+  L.push('', '(ทดสอบอยู่ — ยังไม่เก็บเป็นข้อมูลจริง)')
+  return L.join('\n')
+}
+
+async function handlePhoto(msg, env) {
+  const token = env.TELEGRAM_BOT_TOKEN
+  await tgSend(token, msg.chat.id, '🔍 กำลังวิเคราะห์รูปอาหาร...')
+  try {
+    const photos = msg.photo
+    const fileId = photos[photos.length - 1].file_id          // ใหญ่สุด
+    const gf = await (await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`)).json()
+    const imgRes = await fetch(`https://api.telegram.org/file/bot${token}/${gf.result.file_path}`)
+    const buf = new Uint8Array(await imgRes.arrayBuffer())
+    let bin = ''
+    for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i])
+    const b64 = btoa(bin)
+    await tgSend(token, msg.chat.id, await analyzeMeal(env, b64, msg.caption || ''))
+  } catch (e) {
+    await tgSend(token, msg.chat.id, '📸 ขออภัย วิเคราะห์รูปไม่สำเร็จ ลองใหม่อีกครั้ง')
+  }
+}
 
 async function handleTelegram(update, env) {
   const msg = update.message || update.edited_message
-  if (!msg || !msg.text) return
+  if (!msg) return
   if (msg.chat.id !== OWNER_CHAT_ID) return                 // ตอบเฉพาะเจ้าของ
+  if (msg.photo) { await handlePhoto(msg, env); return }    // 📸 รูปอาหาร
+  if (!msg.text) return
   const cmd = msg.text.trim().split(/\s+/)[0].split('@')[0].toLowerCase()
   const token = env.TELEGRAM_BOT_TOKEN
   const today = ictTodayISO()

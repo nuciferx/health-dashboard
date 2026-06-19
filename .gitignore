@@ -19,3 +19,10 @@ venv/
 # Garmin MFA
 .garmin/
 setup-secrets.bat
+
+# Google Drive junk
+desktop.ini
+**/desktop.ini
+
+# Cloudflare wrangler cache
+cf-worker/.wrangler/

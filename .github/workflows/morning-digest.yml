@@ -1,0 +1,39 @@
+name: Morning Digest
+
+on:
+  schedule:
+    - cron: '0 23 * * *'   # 23:00 UTC = 06:00 ICT (เช้าวันถัดไป)
+  workflow_dispatch:        # กดรันมือได้ (ทดสอบ)
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Check required secrets
+        env:
+          OURA_TOKEN:          ${{ secrets.OURA_TOKEN }}
+          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          missing=0
+          for name in OURA_TOKEN TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+      - run: pip install requests garminconnect python-dotenv
+      - run: python morning_digest.py
+        env:
+          OURA_TOKEN:          ${{ secrets.OURA_TOKEN }}
+          GARMIN_EMAIL:        ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD:     ${{ secrets.GARMIN_PASSWORD }}
+          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}

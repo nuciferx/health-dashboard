@@ -190,26 +190,38 @@ async function tgSend(token, chatId, text) {
 }
 const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '🧾 ส่งรูปใบเสร็จ — ดึงรายการ+ราคา+แคล (โหมดทดสอบ)', '/token — สรุป token + ค่าใช้จ่าย Gemini', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
 
-// ── รูปอาหาร → Gemini Vision (โหมดทดสอบ: ยังไม่บันทึก log) ───────────
-async function analyzeMeal(env, b64, caption) {
-  const prompt = `อ่านใบเสร็จในรูปนี้ ดึงข้อมูลตามจริงจากใบเสร็จ ห้ามแสดงความคิดเห็น/คำแนะนำ${caption ? '\nหมายเหตุผู้ใช้: ' + caption : ''}
-ตอบ JSON ล้วน ไม่มีข้อความอื่น: {"shop":"ชื่อร้าน","datetime":"วันเวลาถ้ามี","items":[{"name":"ชื่อรายการ","qty":number,"price":number,"kcal":number}],"total_price":number,"total_kcal":number}
-- name/qty/price อ่านจากใบเสร็จตามจริง อ่านไม่ออกใส่ null
-- kcal ประเมินจากชื่อรายการอาหาร (ตัวเลขเฉยๆ ไม่ต้องอธิบาย); รายการที่ไม่ใช่อาหารใส่ kcal:null`
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${env.GEMINI_KEY}`
+// ── ใบเสร็จ → Gemini (โหมดทดสอบ: ยังไม่บันทึก) · แก้ได้ด้วยภาษาพูด ───────
+const GEMINI_URL = (env) => `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${env.GEMINI_KEY}`
+function geminiUsage(j) { const u = j.usageMetadata || {}; return { in: u.promptTokenCount || 0, out: u.candidatesTokenCount || 0, total: u.totalTokenCount || 0 } }
+function extractJSON(txt) { const m = (txt || '').match(/\{[\s\S]*\}/); if (!m) return null; try { return JSON.parse(m[0]) } catch (e) { return null } }
+
+const RECEIPT_SCHEMA = `{"shop":"ชื่อร้าน","datetime":"วันเวลาถ้ามี","people":จำนวนคนถ้าระบุบนใบเช่น TABLE(n) ไม่งั้น null,"items":[{"name":"ชื่อรายการ","qty":number,"price":number,"kcal":number}],"total_price":number,"total_kcal":number}`
+
+async function parseReceipt(env, b64, caption) {
+  const prompt = `อ่านใบเสร็จในรูปนี้ ดึงข้อมูลตามจริง ห้ามแสดงความคิดเห็น/คำแนะนำ${caption ? '\nหมายเหตุผู้ใช้: ' + caption : ''}
+ตอบ JSON ล้วน ไม่มีข้อความอื่น: ${RECEIPT_SCHEMA}
+- name/qty/price อ่านตามจริง อ่านไม่ออกใส่ null · kcal ประเมินจากชื่ออาหาร (ตัวเลขเฉยๆ) รายการไม่ใช่อาหารใส่ null`
   const body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }] }] }
-  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  if (!r.ok) return { text: `📸 วิเคราะห์ไม่ได้ (Gemini ${r.status})`, usage: null }
+  const r = await fetch(GEMINI_URL(env), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  if (!r.ok) return { data: null, usage: null }
   const j = await r.json()
-  const um = j.usageMetadata || {}
-  const usage = { in: um.promptTokenCount || 0, out: um.candidatesTokenCount || 0, total: um.totalTokenCount || 0 }
-  const txt = j.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  const m = txt.match(/\{[\s\S]*\}/)
-  if (!m) return { text: '🧾 อ่านใบเสร็จไม่ออก ลองถ่ายให้ชัด/ตรงขึ้น', usage }
-  let d
-  try { d = JSON.parse(m[0]) } catch (e) { return { text: '🧾 อ่านใบเสร็จไม่ออก (parse)', usage } }
+  return { data: extractJSON(j.candidates?.[0]?.content?.parts?.[0]?.text), usage: geminiUsage(j) }
+}
+
+async function editReceipt(env, draft, instruction) {
+  const prompt = `JSON ใบเสร็จปัจจุบัน: ${JSON.stringify(draft)}
+ผู้ใช้สั่งแก้: "${instruction}"
+แก้ JSON ตามคำสั่ง: ถ้าสั่งหารคน→ตั้ง field "people"; ลบ/เพิ่ม/แก้รายการหรือราคา ตามสั่ง; คำนวณ total_kcal ใหม่จาก items; total_price คงยอดบิลจริงเว้นแต่ผู้ใช้สั่งแก้.
+ตอบ JSON เดิมที่แก้แล้วล้วน ไม่มีข้อความอื่น โครงสร้างเดิม: ${RECEIPT_SCHEMA}`
+  const body = { contents: [{ parts: [{ text: prompt }] }] }
+  const r = await fetch(GEMINI_URL(env), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  if (!r.ok) return { data: null, usage: null }
+  const j = await r.json()
+  return { data: extractJSON(j.candidates?.[0]?.content?.parts?.[0]?.text), usage: geminiUsage(j) }
+}
+
+function renderReceipt(d) {
   const items = Array.isArray(d.items) ? d.items : []
-  if (!items.length) return { text: '🧾 อ่านใบเสร็จไม่ออก ลองถ่ายให้ชัดขึ้น', usage }
   const L = ['🧾 ใบเสร็จ — 🧪 โหมดทดสอบ (ยังไม่บันทึก)']
   const head = [d.shop, d.datetime].filter(Boolean).join(' · ')
   if (head) L.push(head)
@@ -219,9 +231,25 @@ async function analyzeMeal(env, b64, caption) {
     const kc = it.kcal != null ? ` (${it.kcal} kcal)` : ''
     L.push(`• ${it.name || '?'}${q}${price}${kc}`)
   }
-  const tp = d.total_price != null ? `฿${d.total_price}` : '?'
-  L.push(`รวม: ${tp}${d.total_kcal != null ? ` · ${d.total_kcal} kcal` : ''}`)
-  return { text: L.join('\n'), usage }
+  const tp = d.total_price
+  L.push(`ยอดบิล: ${tp != null ? '฿' + tp : '?'}${d.total_kcal != null ? ` · ${d.total_kcal} kcal` : ''}`)
+  const n = d.people && d.people > 1 ? d.people : null
+  if (n) {
+    const per = tp != null ? Math.round(tp / n) : null
+    const pk = d.total_kcal != null ? Math.round(d.total_kcal / n) : null
+    L.push(`👥 หาร ${n} คน → คุณ: ${per != null ? '฿' + per : '?'}${pk != null ? ` · ${pk} kcal` : ''}`)
+  }
+  L.push('✏️ แก้ได้: พิมพ์บอก เช่น "หาร 5 คน" · "ลบโค้ก" · "กะเพรา 60"')
+  return L.join('\n')
+}
+
+async function saveDraft(env, chatId, data) {
+  if (env.STATS) await env.STATS.put(`draft:${chatId}`, JSON.stringify(data), { expirationTtl: 21600 })
+}
+async function loadDraft(env, chatId) {
+  if (!env.STATS) return null
+  const raw = await env.STATS.get(`draft:${chatId}`)
+  return raw ? JSON.parse(raw) : null
 }
 
 async function recordTokens(env, u, thb) {
@@ -237,17 +265,24 @@ async function recordTokens(env, u, thb) {
 async function tokenSummary(env) {
   if (!env.STATS) return '📊 ยังไม่ได้ตั้ง storage'
   const raw = await env.STATS.get('meal_tokens')
-  if (!raw) return '📊 ยังไม่มีการวิเคราะห์รูปอาหาร'
+  if (!raw) return '📊 ยังไม่มีการเรียก Gemini'
   const s = JSON.parse(raw)
-  const L = ['📊 สรุปการใช้ Gemini (รูปอาหาร)',
-    `รูปทั้งหมด: ${s.count} รูป`,
+  const L = ['📊 สรุปการใช้ Gemini (ใบเสร็จ)',
+    `เรียกทั้งหมด: ${s.count} ครั้ง`,
     `โทเค็นรวม: ${s.total.toLocaleString()} (in ${s.in.toLocaleString()} · out ${s.out.toLocaleString()})`,
     `💰 ค่าใช้จ่ายรวม: ฿${s.thb.toFixed(2)}`,
-    `เฉลี่ย/รูป: ${Math.round(s.total / s.count).toLocaleString()} tok · ฿${(s.thb / s.count).toFixed(2)}`,
-    '', '🖼️ รายรูปล่าสุด:']
+    `เฉลี่ย/ครั้ง: ${Math.round(s.total / s.count).toLocaleString()} tok · ฿${(s.thb / s.count).toFixed(2)}`,
+    '', '🖼️ ล่าสุด:']
   s.items.slice(-10).forEach((it, i) => L.push(`${i + 1}. ${it.total.toLocaleString()} tok · ฿${it.thb.toFixed(2)}`))
   L.push('', `เรต: in $${GEM_IN_USD}/1M · out $${GEM_OUT_USD}/1M · ฿${USD_THB}/$`)
   return L.join('\n')
+}
+
+async function usageLine(env, usage) {
+  if (!usage || !usage.total) return ''
+  const thb = costTHB(usage)
+  await recordTokens(env, usage, thb)
+  return `\n\n🪙 ${usage.total.toLocaleString()} tokens (in ${usage.in}/out ${usage.out}) · ฿${thb.toFixed(2)}`
 }
 
 async function handlePhoto(msg, env) {
@@ -261,18 +296,29 @@ async function handlePhoto(msg, env) {
     const buf = new Uint8Array(await imgRes.arrayBuffer())
     let bin = ''
     for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i])
-    const b64 = btoa(bin)
-    const res = await analyzeMeal(env, b64, msg.caption || '')
-    let reply = res.text
-    if (res.usage && res.usage.total) {
-      const thb = costTHB(res.usage)
-      reply += `\n\n🪙 ${res.usage.total.toLocaleString()} tokens (in ${res.usage.in}/out ${res.usage.out}) · ฿${thb.toFixed(2)}`
-      await recordTokens(env, res.usage, thb)
+    const { data, usage } = await parseReceipt(env, btoa(bin), msg.caption || '')
+    const extra = await usageLine(env, usage)
+    if (!data || !(Array.isArray(data.items) && data.items.length)) {
+      await tgSend(token, msg.chat.id, '🧾 อ่านใบเสร็จไม่ออก ลองถ่ายให้ชัด/ตรงขึ้น' + extra)
+      return
     }
-    await tgSend(token, msg.chat.id, reply)
+    await saveDraft(env, msg.chat.id, data)
+    await tgSend(token, msg.chat.id, renderReceipt(data) + extra)
   } catch (e) {
     await tgSend(token, msg.chat.id, '🧾 ขออภัย อ่านใบเสร็จไม่สำเร็จ ลองใหม่อีกครั้ง')
   }
+}
+
+async function handleCorrection(msg, env) {
+  const token = env.TELEGRAM_BOT_TOKEN
+  const draft = await loadDraft(env, msg.chat.id)
+  if (!draft) return false                                   // ไม่มีใบเสร็จค้าง → ไม่ใช่การแก้
+  const { data, usage } = await editReceipt(env, draft, msg.text.trim())
+  const extra = await usageLine(env, usage)
+  if (!data) { await tgSend(token, msg.chat.id, '🧾 แก้ไม่สำเร็จ ลองพิมพ์ใหม่' + extra); return true }
+  await saveDraft(env, msg.chat.id, data)
+  await tgSend(token, msg.chat.id, renderReceipt(data) + extra)
+  return true
 }
 
 async function handleTelegram(update, env) {
@@ -296,6 +342,8 @@ async function handleTelegram(update, env) {
     await tgSend(token, msg.chat.id, [header(today), '', ...planLines(planFor(today))].join('\n'))
   } else if (cmd === '/token') {
     await tgSend(token, msg.chat.id, await tokenSummary(env))
+  } else if (!cmd.startsWith('/') && await handleCorrection(msg, env)) {
+    // ข้อความธรรมดา + มีใบเสร็จค้าง = คำสั่งแก้ไข (จัดการใน handleCorrection แล้ว)
   } else {
     await tgSend(token, msg.chat.id, HELP)
   }

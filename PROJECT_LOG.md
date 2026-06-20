@@ -227,6 +227,38 @@ SHEET_ID
 
 ---
 
+## Update: 2026-06-20 — ระบบบันทึกอาหารจากใบเสร็จ + token tracking (Telegram)
+
+ต่อยอด Telegram bot ให้รับรูป + จัดการมื้ออาหารแบบกลุ่ม (ทั้งหมดอยู่ใน `cf-worker/src/index.js`)
+
+### 1. อ่านใบเสร็จ (แทนการเดารูปอาหาร)
+- ส่งรูป**ใบเสร็จ** → Gemini 3 Flash Vision → `{shop, datetime, people, items[name/qty/price/kcal], total_price, total_kcal}`
+- **ข้อมูลล้วน ไม่มีคำแนะนำ/ความเห็น** (ผู้ใช้ขอ) · kcal ประเมินจากชื่อรายการ
+- เปลี่ยนจาก "ถ่ายรูปอาหาร" เพราะ Gemini เดาผิด (เคยมั่วกาแฟดำเป็น "อเมริกาโน่ท็อปครีม 12g ไขมัน")
+
+### 2. มื้อกลุ่ม — หารคน
+- `people` อ่านอัตโนมัติจากใบ (เช่น `TABLE 5 (5)`) · ไม่มีก็ตั้งเองได้
+- แสดง **ส่วนของคุณ** = ยอด ÷ คน (฿/คน + kcal/คน)
+
+### 3. แก้ไขใบเสร็จ 2 ทาง (OCR ผิดได้)
+- **ตาราง Mini App** (`/edit`): ปุ่ม "✏️ แก้ไขเป็นตาราง" → หน้าเว็บในแอป Telegram แตะแก้ในช่อง/เพิ่ม-ลบแถว/ตั้งจำนวนคน/ยอดหารสด → บันทึกผ่าน `POST /api/receipt` (ตรวจ `initData` HMAC-SHA256 + owner)
+- **ภาษาพูด**: พิมพ์ "หาร 5 คน" / "ลบโค้ก" / "กะเพรา 60" → `editReceipt` (Gemini) แก้ JSON
+- draft เก็บใน **KV `draft:<chatid>`** (TTL 6 ชม.)
+
+### 4. Token + ค่าใช้จ่าย
+- แต่ละครั้งที่เรียก Gemini → ต่อท้าย `🪙 N tokens · ฿X` · **`/token`** = สรุปรวม/เฉลี่ย/รายครั้ง
+- เรต: Gemini 3 Flash **$0.50/1M in · $3.00/1M out · ฿35/$** (constant ปรับได้) · stats สะสมใน KV `STATS`
+
+### Cloudflare ที่เพิ่ม
+- Worker secrets: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `STRAVA_CLIENT_ID/SECRET/REFRESH_TOKEN`
+- KV namespace `STATS` (id `98f0afee46464354b075755e090a8616`) — token stats + receipt drafts
+- Routes ใหม่: `POST /telegram` (webhook), `GET /edit` (Mini App), `POST /api/receipt`
+
+### ⚠️ ยังเป็นโหมดทดสอบ
+- meal data **ยังไม่บันทึกถาวร** (draft 6 ชม.) — เปิดเก็บจริงเมื่อพอใจ → สรุป ฿/วัน + แคล/วัน เข้า digest/`/health`
+
+---
+
 ## วิธี Deploy อัพเดต
 
 ```bash
@@ -278,4 +310,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-06-19 — Telegram digest+bot, Strava/Garmin-token cloud data, Oura depth, meal-photo (test) + /token
+## Last updated: 2026-06-20 — receipt OCR + group split + table Mini App (/edit) + /token cost tracking

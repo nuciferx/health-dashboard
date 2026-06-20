@@ -297,6 +297,15 @@ SHEET_ID
 
 ---
 
+## Update: 2026-06-20 (e) — ล็อกแผนใหม่ (realistic, post-injury) + /week + Telegram menu
+
+- **แผนรายสัปดาห์ใหม่** (3 keystone/wk, ไต่ค่อยๆ, easy ≤145, เป้าจบไม่เจ็บ) — rewrite `WEEKS` dict ทั้งใน `morning_digest.py` + `cf-worker` ให้ตรงกัน + section ใหม่ใน `CM6_i2_ตารางซ้อม.md` · OVERRIDE 20-24 มิ.ย. = พักเอ็น
+- **`/week`** — แผน 7 วันข้างหน้า (เว้นบรรทัดอ่านง่าย) ใน Telegram
+- **Telegram command menu** — `setMyCommands` (today/plan/week/done/homework/readiness/token/help) → กดปุ่ม ☰ เลือกได้ · `setChatMenuButton` = commands
+- ส่งแผน (7 วัน + ภาพรวม 7 สัปดาห์) เข้า Telegram ผ่าน bot sendMessage โดยตรง
+
+---
+
 ## วิธี Deploy อัพเดต
 
 ```bash

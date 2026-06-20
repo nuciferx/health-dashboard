@@ -21,7 +21,8 @@
 - ปรัชญา: ส่งข้อเท็จจริง + ธงเตือน เท่านั้น **ไม่ใส่คำแนะนำ AI รายวัน** (เคยตัดสินใจแล้วว่าเป็น noise)
 
 **② Telegram command bot** (`cf-worker/src/index.js` — webhook `POST /telegram`, owner-only + `TELEGRAM_WEBHOOK_SECRET`)
-- คำสั่งสด: `/today` `/readiness` `/plan` (Oura+Strava สด) · `/token` (สรุป token+ค่าใช้จ่าย Gemini) · `/help`
+- คำสั่งสด: `/today` `/readiness` `/plan` (Oura+Strava สด) · `/token` · `/help`
+- **📚 ส่งการบ้าน (check-back ④):** `/done <ทำอะไรไป>` → Gemini คอมเมนต์แบบโค้ช (เทียบแผนวันนี้) + เก็บ KV `hw:<date>` · `/homework` = สรุป 7 วัน · **cron 20:00 ICT** (`scheduled()` + `[triggers] crons`) เตือนส่งการบ้านตอนเย็น
 - **📸 ส่งรูปใบเสร็จ** → Gemini 3 Flash อ่านรายการ/ราคา/แคล (ข้อมูลล้วน ไม่มีคำแนะนำ) · **โหมดทดสอบ ยังไม่บันทึก meal data**
 - แก้ใบเสร็จ 2 ทาง: **ตาราง Mini App** (ปุ่ม → `/edit`, แตะแก้ในช่อง, บันทึกผ่าน `/api/receipt` ตรวจ initData HMAC) หรือ **ภาษาพูด** ("หาร 5 คน", "ลบโค้ก") · per-person split อัตโนมัติ
 - โค้ด JS port logic จาก `morning_digest.py` — **ต้อง sync กัน** (แผน/Oura)

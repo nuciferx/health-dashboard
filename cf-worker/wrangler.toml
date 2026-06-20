@@ -5,3 +5,6 @@ compatibility_date = "2024-09-23"
 [[kv_namespaces]]
 binding = "STATS"
 id = "98f0afee46464354b075755e090a8616"
+
+[triggers]
+crons = ["0 13 * * *"]   # 20:00 ICT — เตือนส่งการบ้านตอนเย็น

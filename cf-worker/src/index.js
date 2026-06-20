@@ -208,7 +208,7 @@ async function validateInit(initData, botToken) {
   if (toHex(await hmacRaw(secret, dcs)) !== hash) return null
   try { return JSON.parse(p.get('user') || 'null') } catch (e) { return null }
 }
-const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '🧾 ส่งรูปใบเสร็จ — ดึงรายการ+ราคา+แคล (โหมดทดสอบ)', '/token — สรุป token + ค่าใช้จ่าย Gemini', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
+const HELP = ['🤖 คำสั่ง CM6 Health', '/today — สรุปสุขภาพวันนี้ (Oura สด)', '/readiness — นอน/HRV/readiness', '/plan — แผนซ้อมวันนี้', '📚 /done <ทำอะไรไป> — ส่งการบ้าน + รับคอมเมนต์โค้ช', '/homework — สรุปการบ้าน 7 วัน', '🧾 ส่งรูปใบเสร็จ — ดึงรายการ+ราคา+แคล (ทดสอบ)', '/token — สรุป token + ค่าใช้จ่าย Gemini', '/help — คำสั่งทั้งหมด', '', '🔎 วิเคราะห์ลึก/activity → คุยกับ Claude'].join('\n')
 
 // ── ใบเสร็จ → Gemini (โหมดทดสอบ: ยังไม่บันทึก) · แก้ได้ด้วยภาษาพูด ───────
 const GEMINI_URL = (env) => `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${env.GEMINI_KEY}`
@@ -270,6 +270,38 @@ async function loadDraft(env, chatId) {
   if (!env.STATS) return null
   const raw = await env.STATS.get(`draft:${chatId}`)
   return raw ? JSON.parse(raw) : null
+}
+
+// ── ส่งการบ้าน (check-back ④) + คอมเมนต์โค้ช ─────────────────────────
+function planStr(p) {
+  if (!p) return '(นอกตารางซ้อม)'
+  return `${p.s}${p.d && p.d !== '—' ? ' — ' + p.d : ''}${p.h && p.h !== '—' ? ` (เป้า HR ${p.h})` : ''}`
+}
+async function homeworkComment(env, plan, submission) {
+  const prompt = `คุณคือโค้ชวิ่งเทรลที่เป็นกันเอง พูดสั้นกระชับ.
+แผนซ้อมวันนี้: "${planStr(plan)}".
+นักวิ่งรายงานผล: "${submission}".
+ให้คอมเมนต์ภาษาไทยสั้น 1-2 บรรทัด: ชมถ้าทำตรงแผน/คุมโซนได้, เตือนสั้นถ้าเกินโซน(>150)หรือทำไม่ครบ, ถ้าพัก/พลาดให้ถามสั้นๆว่าติดอะไรพรุ่งนี้แก้ยังไง. โทนให้กำลังใจแต่ตรงไปตรงมา ห้ามเทศนายืดยาว ห้ามใช้ bullet ตอบเป็นข้อความล้วน.`
+  const r = await fetch(GEMINI_URL(env), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+  })
+  if (!r.ok) return { comment: '(คอมเมนต์ไม่ได้ตอนนี้)', usage: null }
+  const j = await r.json()
+  return { comment: (j.candidates?.[0]?.content?.parts?.[0]?.text || '(ไม่มีคอมเมนต์)').trim(), usage: geminiUsage(j) }
+}
+async function homeworkSummary(env, todayISO) {
+  if (!env.STATS) return '📚 ยังไม่ได้ตั้ง storage'
+  const rows = [], dates = []
+  let done = 0
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(todayISO, -i)
+    dates.push(d)
+    const raw = await env.STATS.get(`hw:${d}`)
+    if (raw) { done++; rows.push(`✅ ${d.slice(5)}: ${(JSON.parse(raw).text || '').slice(0, 45)}`) }
+    else rows.push(`⬜ ${d.slice(5)}: ยังไม่ส่ง`)
+  }
+  return [`📚 การบ้าน 7 วันล่าสุด — ส่งแล้ว ${done}/7 วัน`, '', ...rows].join('\n')
 }
 
 async function recordTokens(env, u, thb) {
@@ -362,6 +394,19 @@ async function handleTelegram(update, env) {
     await tgSend(token, msg.chat.id, [header(today), '', ...planLines(planFor(today))].join('\n'))
   } else if (cmd === '/token') {
     await tgSend(token, msg.chat.id, await tokenSummary(env))
+  } else if (cmd === '/done') {
+    const submission = msg.text.trim().replace(/^\/done(@\S+)?\s*/i, '').trim()
+    const plan = planFor(today)
+    if (!submission) {
+      await tgSend(token, msg.chat.id, `📚 การบ้านวันนี้: ${plan ? plan.s : '(นอกตาราง)'}\nส่งด้วย: /done <ทำอะไรไป>\nเช่น  /done long vertical 2ชม +650m HR เฉลี่ย 142\nหรือ  /done พักเพราะเอ็นตึง`)
+    } else {
+      const { comment, usage } = await homeworkComment(env, plan, submission)
+      const extra = await usageLine(env, usage)
+      if (env.STATS) await env.STATS.put(`hw:${today}`, JSON.stringify({ plan: plan ? plan.s : null, text: submission, comment }), { expirationTtl: 60 * 60 * 24 * 60 })
+      await tgSend(token, msg.chat.id, `📚 รับการบ้าน ${today} ✅\n📋 แผน: ${plan ? plan.s : '—'}\n✍️ ${submission}\n💬 โค้ช: ${comment}${extra}`)
+    }
+  } else if (cmd === '/homework') {
+    await tgSend(token, msg.chat.id, await homeworkSummary(env, today))
   } else if (!cmd.startsWith('/') && await handleCorrection(msg, env)) {
     // ข้อความธรรมดา + มีใบเสร็จค้าง = คำสั่งแก้ไข (จัดการใน handleCorrection แล้ว)
   } else {
@@ -476,5 +521,14 @@ export default {
     }
 
     return cors(JSON.stringify({ error: 'not found' }), 404)
+  },
+
+  // ── cron: เย็นเตือนส่งการบ้าน (20:00 ICT = 13:00 UTC) ──
+  async scheduled(event, env, ctx) {
+    const today = ictTodayISO()
+    const p = planFor(today)
+    const detail = p && p.d && p.d !== '—' ? '\n   ' + p.d : ''
+    await tgSend(env.TELEGRAM_BOT_TOKEN, OWNER_CHAT_ID,
+      `📚 ส่งการบ้านวันนี้ (${DOW[pyWeekday(today)]} ${asUTC(today).getUTCDate()})\n📋 ${p ? p.s : '(นอกตารางซ้อม)'}${detail}\n\nทำได้แค่ไหน? ส่ง: /done <บอกผล>\nเช่น  /done +650m HR142  ·  /done พักเอ็นตึง`)
   },
 }

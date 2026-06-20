@@ -286,6 +286,17 @@ SHEET_ID
 
 ---
 
+## Update: 2026-06-20 (d) — ระบบส่งการบ้าน + คอมเมนต์โค้ช (check-back ④)
+
+ตัวที่เปลี่ยนบอทจาก one-way → two-way (หลักฐานแข็งสุดในงานวิจัย adherence) — ใน `cf-worker/src/index.js`:
+- **`/done <ทำอะไรไป>`** → ส่งการบ้านวันนี้ → Gemini 3 Flash คอมเมนต์แบบโค้ช (เทียบ `planFor(today)`, ชม/เตือนโซน/problem-solving ถ้าพลาด, สั้น 1-2 บรรทัด) → เก็บ KV `hw:<date>` (60 วัน)
+- **`/homework`** → สรุป 7 วัน "ส่งแล้ว X/7"
+- **cron 20:00 ICT** (`scheduled()` handler + `[triggers] crons=["0 13 * * *"]`) → เย็นเตือน "ส่งการบ้านวันนี้: [แผน] · /done ..."
+- token ของ comment นับใน /token เหมือนกัน
+- หลักการ: คะแนน+คอมเมนต์ (ไม่มีเดิมพันเงิน/social ตามที่ผู้ใช้เลือก)
+
+---
+
 ## วิธี Deploy อัพเดต
 
 ```bash
@@ -337,4 +348,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-06-20 — receipt OCR + table Mini App + /token; morning poll-until-Oura-synced (claim dedup)
+## Last updated: 2026-06-20 — adherence v1 (zone/gap) + homework /done coach-comment (evening cron); receipt Mini App; morning poll

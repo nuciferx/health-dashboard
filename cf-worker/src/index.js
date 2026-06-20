@@ -305,13 +305,14 @@ async function homeworkSummary(env, todayISO) {
 }
 
 async function recordTokens(env, u, thb) {
-  if (!env.STATS) return
+  if (!env.STATS) return null
   const raw = await env.STATS.get('meal_tokens')
   const s = raw ? JSON.parse(raw) : { count: 0, in: 0, out: 0, total: 0, thb: 0, items: [] }
   s.count++; s.in += u.in; s.out += u.out; s.total += u.total; s.thb += thb
   s.items.push({ total: u.total, thb: Number(thb.toFixed(4)) })
   if (s.items.length > 50) s.items = s.items.slice(-50)
   await env.STATS.put('meal_tokens', JSON.stringify(s))
+  return s.thb   // ยอดสะสมรวม
 }
 
 async function tokenSummary(env) {
@@ -333,8 +334,9 @@ async function tokenSummary(env) {
 async function usageLine(env, usage) {
   if (!usage || !usage.total) return ''
   const thb = costTHB(usage)
-  await recordTokens(env, usage, thb)
-  return `\n\n🪙 ${usage.total.toLocaleString()} tokens (in ${usage.in}/out ${usage.out}) · ฿${thb.toFixed(2)}`
+  const total = await recordTokens(env, usage, thb)
+  return `\n\n🪙 Gemini: ${usage.total.toLocaleString()} tokens · ฿${thb.toFixed(2)}` +
+    (total != null ? ` (สะสม ฿${total.toFixed(2)})` : '')
 }
 
 async function handlePhoto(msg, env) {

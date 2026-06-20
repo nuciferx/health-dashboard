@@ -75,6 +75,7 @@
 6. แก้ secret ผ่าน `gh secret set` / `wrangler secret put` — **ห้าม commit ค่า secret ลงไฟล์**
 
 > ⚠️ แก้ตารางซ้อม → sync **2 ที่**: `morning_digest.py` (dict) + `cf-worker/src/index.js` (`/plan`,`/today`)
+> 💸 **กฎ: ทุก call ที่เสียเงิน (Gemini เท่านั้น — Oura/Strava/Garmin/Telegram ฟรี) ต้องโชว์ราคา** — เรียกผ่าน `usageLine(env, usage)` ต่อท้ายข้อความเสมอ (โชว์ tokens + ฿ ครั้งนี้ + ยอดสะสม) และนับเข้า `/token`. ฟีเจอร์ใหม่ที่เรียก Gemini = ห้ามลืม usageLine
 
 ## Legacy / สิ่งที่เลิกใช้
 - ~~`.github/workflows/log-garmin.yml`~~ — **ปลดระวางแล้ว** (cron 15 นาทีเขียน Google Sheet ที่ fail เงียบ: Garmin บล็อก CI + secrets `GCP_SA_KEY`/`SHEET_ID` ไม่เคยตั้ง)

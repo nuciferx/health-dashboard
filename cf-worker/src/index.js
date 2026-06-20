@@ -450,6 +450,16 @@ export default {
       return cors(JSON.stringify({ error: 'bad action' }), 400)
     }
 
+    // ── /digest-claim ── กันส่ง digest ซ้ำ (cron เช้าหลายรอบ) claim ต่อวัน
+    if (path === '/digest-claim' && request.method === 'POST') {
+      if (request.headers.get('x-digest-secret') !== env.DIGEST_SECRET) return cors(JSON.stringify({ error: 'forbidden' }), 403)
+      const { date } = await request.json()
+      const key = `digest_sent:${date}`
+      if (await env.STATS.get(key)) return cors(JSON.stringify({ go: false }))
+      await env.STATS.put(key, '1', { expirationTtl: 172800 })   // 2 วัน
+      return cors(JSON.stringify({ go: true }))
+    }
+
     // ── /oura/* ── proxy to Oura v2 API
     if (path.startsWith('/oura/')) {
       const ouraURL = `https://api.ouraring.com/v2${path.replace('/oura', '')}${url.search}`

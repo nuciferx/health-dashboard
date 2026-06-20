@@ -32,6 +32,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 ICT = timezone(timedelta(hours=7))
 RACE_DATE = datetime(2026, 8, 8, tzinfo=ICT).date()
+WORKER_URL = "https://health-proxy.ideaplanstudio.workers.dev"
 
 # โซน HR (max 186) จากตารางซ้อม
 ZONES = [(130, 148, "Z2"), (149, 160, "Z3"), (161, 172, "Z4")]
@@ -489,6 +490,23 @@ def send_telegram(token, chat_id, text):
     return r.json()
 
 
+def claim_send(today):
+    """ดึงสิทธิ์ส่ง digest วันนี้ (กันส่งซ้ำจาก cron หลายรอบ) ผ่าน KV ของ worker.
+    คืน True ถ้าควรส่ง · ถ้าเช็คไม่ได้/ไม่ได้ตั้ง secret → True (ส่งไว้ก่อน ดีกว่าพลาด)"""
+    secret = os.environ.get("DIGEST_SECRET")
+    if not secret:
+        return True
+    try:
+        r = requests.post(f"{WORKER_URL}/digest-claim",
+                          headers={"x-digest-secret": secret},
+                          json={"date": today.isoformat()}, timeout=15)
+        if r.ok:
+            return bool(r.json().get("go"))
+    except Exception as e:
+        print(f"claim_send error: {e}")
+    return True
+
+
 def main():
     token = os.environ.get("OURA_TOKEN")
     if not token:
@@ -496,7 +514,23 @@ def main():
         sys.exit(1)
 
     today = datetime.now(ICT).date()
+    tg_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    tg_chat = os.environ.get("TELEGRAM_CHAT_ID")
+    auto = bool(tg_token and tg_chat)
+    force = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+             or os.environ.get("DIGEST_FORCE"))
+
     oura = fetch_oura(token, today)
+
+    # ── gate: รอ Oura sync (cron เช้าหลายรอบ) — ส่งเมื่อข้อมูลพร้อม + ส่งครั้งเดียว ──
+    if auto and not force:
+        if oura["readiness"] is None and oura["sleep_h"] is None:
+            print("Oura ยังไม่ sync วันนี้ — ข้ามรอบนี้ (จะลองรอบถัดไป)")
+            return
+        if not claim_send(today):
+            print("ส่ง digest วันนี้ไปแล้ว — ข้าม")
+            return
+
     strava = fetch_strava()
     garmin = fetch_garmin() if "error" in strava else None  # fallback เฉพาะตอน Strava ไม่พร้อม
     activity = pick_activity(strava, garmin)
@@ -504,9 +538,7 @@ def main():
     plan = plan_for(today)
     msg = build_message(today, oura, activity, plan, gwell)
 
-    tg_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    tg_chat = os.environ.get("TELEGRAM_CHAT_ID")
-    if tg_token and tg_chat:
+    if auto:
         send_telegram(tg_token, tg_chat, msg)
         print("✅ ส่ง Telegram แล้ว\n")
         print(msg)

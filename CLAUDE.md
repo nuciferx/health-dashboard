@@ -13,7 +13,9 @@
 
 **① Morning digest อัตโนมัติ → Telegram** (rule-based ล้วน, ไม่มี AI)
 - `morning_digest.py` + `.github/workflows/morning-digest.yml`
-- cron `0 23 * * *` (= 06:00 น. ไทย) ทุกวัน
+- **cron หลายรอบ 06:00–09:30 ICT (ทุก 30 นาที)** — เพราะแหวน Oura sync เข้าคลาวด์หลังตื่น/เปิดมือถือ ไม่ใช่ 6 โมงเป๊ะ
+  - รอบที่ Oura ยังไม่มีข้อมูลวันนี้ (`readiness` & `sleep_h` = None) → **ข้าม ไม่ส่งของว่าง**
+  - รอบแรกที่ข้อมูลพร้อม → ส่ง 1 ครั้ง แล้ว **claim ผ่าน worker `/digest-claim` (KV) กันส่งซ้ำ** · `workflow_dispatch` = force ส่งทันที ข้าม gate
 - ดึง Oura + Garmin(token) + Strava → สรุปนอน/HRV/RHR/readiness/stress/resilience + activity + แผนวันนี้ → ส่ง Telegram
 - ปรัชญา: ส่งข้อเท็จจริง + ธงเตือน เท่านั้น **ไม่ใส่คำแนะนำ AI รายวัน** (เคยตัดสินใจแล้วว่าเป็น noise)
 
@@ -43,9 +45,9 @@
 > 🔑 **token หมดอายุ ~1 ปี** (oauth1) — ถ้าวันไหน stress/body battery หาย ให้ re-dump: `python` → `Garmin(email,pw).login()` → `client.dumps()` → `gh secret set GARMIN_TOKENS`
 
 ## Secrets
-- **GitHub Actions** (สำหรับ digest): `OURA_TOKEN`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REFRESH_TOKEN`, `GARMIN_TOKENS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+- **GitHub Actions** (สำหรับ digest): `OURA_TOKEN`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REFRESH_TOKEN`, `GARMIN_TOKENS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DIGEST_SECRET` (claim กันส่งซ้ำ)
 - **Local** `.env`: `OURA_TOKEN`, `GARMIN_EMAIL`, `GARMIN_PASSWORD` (+ `SHEET_ID`, `GCP_SA_KEY` legacy)
-- **Cloudflare** worker `health-proxy` (`cf-worker/`): `OURA_TOKEN`, `GEMINI_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `STRAVA_CLIENT_ID/SECRET/REFRESH_TOKEN` + **KV namespace `STATS`** (token-cost stats + receipt draft `draft:<chatid>`)
+- **Cloudflare** worker `health-proxy` (`cf-worker/`): `OURA_TOKEN`, `GEMINI_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `STRAVA_CLIENT_ID/SECRET/REFRESH_TOKEN`, `DIGEST_SECRET` + **KV namespace `STATS`** (token-cost stats · receipt draft `draft:<chatid>` · digest claim `digest_sent:<date>`)
 - ตั้ง Cloudflare secret: `printf '%s' "<val>" | npx wrangler secret put <NAME>` (ใน `cf-worker/`)
 - ตั้ง GitHub secret: `printf '%s' "<val>" | gh secret set <NAME>` (ต้อง `gh auth login` ก่อน)
 

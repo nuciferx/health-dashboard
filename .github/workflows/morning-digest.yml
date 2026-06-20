@@ -2,8 +2,10 @@ name: Morning Digest
 
 on:
   schedule:
-    - cron: '0 23 * * *'   # 23:00 UTC = 06:00 ICT (เช้าวันถัดไป)
-  workflow_dispatch:        # กดรันมือได้ (ทดสอบ)
+    # รันหลายรอบช่วงเช้า (รอ Oura sync) — ส่งครั้งเดียวเมื่อข้อมูลพร้อม (กันซ้ำผ่าน KV)
+    - cron: '0,30 23 * * *'   # 06:00, 06:30 ICT
+    - cron: '0,30 0-2 * * *'  # 07:00–09:30 ICT
+  workflow_dispatch:           # กดรันมือได้ (force ส่งทันที ข้าม gate)
 
 jobs:
   digest:
@@ -39,3 +41,4 @@ jobs:
           GARMIN_TOKENS:        ${{ secrets.GARMIN_TOKENS }}
           TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          DIGEST_SECRET:        ${{ secrets.DIGEST_SECRET }}

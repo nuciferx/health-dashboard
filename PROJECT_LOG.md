@@ -259,6 +259,18 @@ SHEET_ID
 
 ---
 
+## Update: 2026-06-20 (b) — แก้ปัญหา Oura ยังไม่ sync ตอน 6 โมง
+
+**ปัญหา:** แหวน Oura sync เข้าคลาวด์หลังผู้ใช้ตื่น/เปิดมือถือ ไม่ใช่ 6 โมงเป๊ะ → cron เดิม (ยิงครั้งเดียว 06:00) เจอข้อมูลว่าง
+
+**แก้:** poll-and-send-once
+- cron เปลี่ยนเป็นหลายรอบ **06:00–09:30 ICT ทุก 30 นาที** (`0,30 23 * * *` + `0,30 0-2 * * *`)
+- `morning_digest.py`: ถ้า Oura วันนี้ยังไม่มี (`readiness` & `sleep_h` = None) → ข้าม ไม่ส่ง · รอบแรกที่ข้อมูลพร้อม → `claim_send()` ขอสิทธิ์ผ่าน worker `POST /digest-claim` (KV `digest_sent:<date>`, TTL 2 วัน) → ส่งครั้งเดียว
+- `workflow_dispatch` (กดมือ) = force ส่งทันที ข้าม gate
+- secret ใหม่: `DIGEST_SECRET` (GitHub + Cloudflare) · ทดสอบแล้ว: claim 1st `go:true`, 2nd `go:false`, ปลอม 403
+
+---
+
 ## วิธี Deploy อัพเดต
 
 ```bash
@@ -310,4 +322,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-06-20 — receipt OCR + group split + table Mini App (/edit) + /token cost tracking
+## Last updated: 2026-06-20 — receipt OCR + table Mini App + /token; morning poll-until-Oura-synced (claim dedup)

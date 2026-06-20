@@ -16,7 +16,8 @@
 - **cron หลายรอบ 06:00–09:30 ICT (ทุก 30 นาที)** — เพราะแหวน Oura sync เข้าคลาวด์หลังตื่น/เปิดมือถือ ไม่ใช่ 6 โมงเป๊ะ
   - รอบที่ Oura ยังไม่มีข้อมูลวันนี้ (`readiness` & `sleep_h` = None) → **ข้าม ไม่ส่งของว่าง**
   - รอบแรกที่ข้อมูลพร้อม → ส่ง 1 ครั้ง แล้ว **claim ผ่าน worker `/digest-claim` (KV) กันส่งซ้ำ** · `workflow_dispatch` = force ส่งทันที ข้าม gate
-- ดึง Oura + Garmin(token) + Strava → สรุปนอน/HRV/RHR/readiness/stress/resilience + activity + แผนวันนี้ → ส่ง Telegram
+- ดึง Oura + Garmin(token) + Strava → สรุปนอน/HRV/RHR/readiness/stress/resilience + activity + **สรุป 7 วัน (วินัยโซน ≤150 + ไต่รวม + จับช่วงหาย ≥3 วัน)** + แผนวันนี้ → ส่ง Telegram
+- **Adherence v1** (`fetch_strava_week`/`training_review`): จับ gray-zone + ช่วงหาย อิงพฤติกรรมจริง (ดู `CM6_i2_adherence_research.md`) · ถัดไป: streak (ต้อง KV), check-back ✅/❌ รายวัน, session-specific accountability
 - ปรัชญา: ส่งข้อเท็จจริง + ธงเตือน เท่านั้น **ไม่ใส่คำแนะนำ AI รายวัน** (เคยตัดสินใจแล้วว่าเป็น noise)
 
 **② Telegram command bot** (`cf-worker/src/index.js` — webhook `POST /telegram`, owner-only + `TELEGRAM_WEBHOOK_SECRET`)

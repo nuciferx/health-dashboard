@@ -332,6 +332,70 @@ def pick_activity(strava, garmin):
     return None
 
 
+def strava_token():
+    cid = os.environ.get("STRAVA_CLIENT_ID")
+    secret = os.environ.get("STRAVA_CLIENT_SECRET")
+    refresh = os.environ.get("STRAVA_REFRESH_TOKEN")
+    if not (cid and secret and refresh):
+        return None
+    try:
+        tok = requests.post("https://www.strava.com/oauth/token", data={
+            "client_id": cid, "client_secret": secret,
+            "refresh_token": refresh, "grant_type": "refresh_token"}, timeout=30)
+        tok.raise_for_status()
+        return tok.json().get("access_token")
+    except Exception:
+        return None
+
+
+def fetch_strava_week(today, days=8):
+    """ดึง activity ย้อนหลัง N วัน สำหรับวิเคราะห์วินัยโซน + จับช่วงหาย"""
+    at = strava_token()
+    if not at:
+        return None
+    try:
+        r = requests.get("https://www.strava.com/api/v3/athlete/activities",
+                         headers={"Authorization": f"Bearer {at}"},
+                         params={"per_page": 30}, timeout=30)
+        r.raise_for_status()
+        cutoff = today - timedelta(days=days)
+        out = []
+        for a in r.json():
+            ds = (a.get("start_date_local") or "")[:10]
+            if not ds:
+                continue
+            d = datetime.fromisoformat(ds).date()
+            if d < cutoff:
+                continue
+            gain = a.get("total_elevation_gain") or 0
+            out.append({
+                "date": d,
+                "sport": (a.get("sport_type") or a.get("type") or "").lower(),
+                "km": round((a.get("distance") or 0) / 1000, 1),
+                "gain": round(gain),
+                "avg_hr": round(a["average_heartrate"]) if a.get("average_heartrate") else None,
+            })
+        return out
+    except Exception:
+        return None
+
+
+def training_review(week, today):
+    """สรุป 7 วัน: จำนวนวิ่ง, วินัยโซน (≤150), ไต่รวม, จำนวนวันที่ไม่ขยับ"""
+    if week is None:
+        return None
+    runs = [a for a in week if a["sport"] in ("run", "trailrun")]
+    last = max((a["date"] for a in week), default=None)
+    withhr = [a for a in runs if a["avg_hr"]]
+    return {
+        "n_runs": len(runs),
+        "n_hr": len(withhr),
+        "n_ok": sum(1 for a in withhr if a["avg_hr"] <= EASY_HR_CAP),
+        "vert": sum(a["gain"] for a in week),
+        "gap": (today - last).days if last else None,
+    }
+
+
 # ── Format ──────────────────────────────────────────────────────────────
 def arrow(now, avg):
     if now is None or avg is None:
@@ -376,7 +440,7 @@ def weak_points(contrib, n=2, thresh=60):
     return out
 
 
-def build_message(today, oura, activity, plan, gwell=None):
+def build_message(today, oura, activity, plan, gwell=None, review=None):
     days_left = (RACE_DATE - today).days
     L = []
     L.append(f"🌅 {THAI_DOW[today.weekday()]} {today.day} {THAI_MON[today.month]} — เหลือ {days_left} วัน CM6 i2")
@@ -460,6 +524,18 @@ def build_message(today, oura, activity, plan, gwell=None):
             vmark = " ✅" if activity["vert"] >= 550 else (" 🟡" if activity["vert"] >= 400 else " 🔴 (เป้า 550-650)")
             L.append(f"   ไต่ {activity['vert']} ม/ชม{vmark}")
 
+    # 📊 สรุป 7 วัน — วินัยโซน + จับช่วงหาย (②+③)
+    if review:
+        L.append(f"📊 7 วัน: วิ่ง {review['n_runs']} ครั้ง · ไต่รวม {review['vert']} ม.")
+        if review["n_hr"]:
+            ok = review["n_ok"] * 2 >= review["n_hr"]
+            L.append(f"   คุมโซน ≤150: {review['n_ok']}/{review['n_hr']} ครั้ง" + (" ✅" if ok else " 🔴 ส่วนใหญ่เกินโซน"))
+            if not ok:
+                flags.append("วิ่งเกินโซนบ่อย")
+        if review.get("gap") is not None and review["gap"] >= 3:
+            L.append(f"⚠️ ไม่ได้ขยับมา {review['gap']} วัน — แผนยังรออยู่")
+            flags.append(f"หาย {review['gap']} วัน")
+
     L.append("")
 
     # 📋 แผนวันนี้
@@ -535,8 +611,9 @@ def main():
     garmin = fetch_garmin() if "error" in strava else None  # fallback เฉพาะตอน Strava ไม่พร้อม
     activity = pick_activity(strava, garmin)
     gwell = fetch_garmin_wellness()                         # stress + body battery (token-based)
+    review = training_review(fetch_strava_week(today), today)  # วินัยโซน + จับช่วงหาย (②③)
     plan = plan_for(today)
-    msg = build_message(today, oura, activity, plan, gwell)
+    msg = build_message(today, oura, activity, plan, gwell, review)
 
     if auto:
         send_telegram(tg_token, tg_chat, msg)

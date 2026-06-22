@@ -26,5 +26,5 @@
 
 | # | งาน | hash | วันที่ |
 |---|-----|------|-------|
-| B6 | flag deep/REM สั้น + หาเหตุ (stress/readiness) ใน digest | _(pending commit)_ | 2026-06-22 |
+| B6 | flag deep/REM สั้น + หาเหตุ (stress/readiness) ใน digest | 05aac22 | 2026-06-22 |
 | K0 | kaizen: KV `--remote` hook (poka-yoke) + GTM docs + รับ dev loop | 2026-06-22 | 2026-06-22 |

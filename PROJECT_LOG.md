@@ -306,6 +306,38 @@ SHEET_ID
 
 ---
 
+## Update: 2026-06-22 — GTM kaizen: KV อ่าน local แทน remote (defect = environment mismatch)
+
+**เหตุการณ์ (Understanding Condition):** ผู้ใช้ถามว่า `/done` 21-22 มิ.ย. มีบันทึกไหม. ผมรัน `wrangler kv key get/list` **ไม่ใส่ `--remote`** → เห็นแค่ record ทดสอบใน local store (`hw:2026-06-20`) → ฟันธงผิดว่า "21-22 ไม่มี" + เดาว่าเป็นบั๊ก Gemini. ผู้ใช้ทักว่า `/homework` ในเทเลแกรมขึ้นว่ามี → ใส่ `--remote` แล้วเจอจริง (`hw:2026-06-21` = "หายเจ็บขาแล้ว", `hw:2026-06-22` = "อาการเจ็บดีขึ้น").
+
+**Defect Factors Analysis (root cause):**
+1. **environment mismatch** — `wrangler kv` ดีฟอลต์อ่าน local miniflare ไม่ใช่โปรดักชันที่บอตใช้จริง
+2. **judgment defect** — ขัดหลักฐานที่ผู้ใช้เห็นในแอปจริง โดยไปสงสัยผู้ใช้/เดาบั๊ก แทนที่จะสงสัย read-path ของตัวเองก่อน
+
+**Eliminating + Setting Condition (countermeasure ที่ lock ไว้):**
+- **🛡️ hook บังคับ (poka-yoke):** `.claude/settings.json` (PreToolUse/Bash) → `.claude/hooks/check-wrangler-kv-remote.py` **block ทุก `wrangler kv` ที่ไม่มี `--remote`/`--local`/`--preview`** — กันพลาดระดับ tool-call ทุกครั้ง ไม่พึ่งความจำ
+- `CLAUDE.md` (dev-workflow callout 🔍 + 🛡️): ตรวจ KV จริงต้องใส่ `--remote` + ถ้าขัดกับสิ่งที่ผู้ใช้เห็นในเทเลแกรม ให้สงสัย read-path เราก่อน
+- memory `kv-remote-flag-gotcha` (feedback): กฎเชิงพฤติกรรมเดียวกัน
+- worker source (`cf-worker/src/index.js`) **ไม่เปลี่ยน** — เพิ่มเฉพาะ hook/docs
+
+**Verification:** `npx wrangler kv key list --remote` คืน 5 keys รวม `hw:2026-06-21/22` จริง · local list คืนแค่ `hw:2026-06-20` → ยืนยัน root cause = local/remote split · **hook ทดสอบสด:** ไม่มี flag → โดน deny, มี `--remote` → ผ่าน (4 pipe-test เคสผ่าน)
+
+**Known gaps / Next action:** record local `hw:2026-06-20` เป็น test artifact (ไม่มีในรีโมต) ปล่อยไว้ได้ · hook ใช้ Python (เครื่องนี้ไม่มี jq) · ถ้าจะกัน Gemini-พัง-แล้วเงียบใน `/done` (เซฟ raw ก่อนเรียก Gemini) = sprint แยก ยังไม่ทำรอบนี้ → คิวเป็น `B1` ใน `BACKLOG.md`
+
+---
+
+## Update: 2026-06-22 (b) — รับ GTM dev loop จาก BMA-Plan (ปรับให้เข้าโปรเจกต์)
+
+นำ **GTM Infinite Loop** + **autonomous dev-loop** ของ BMA-Plan มาปรับใช้ (ผู้ใช้เลือก "ทั้งสอง" + full-auto commit):
+- **`CLAUDE.md` → section "Dev Operating Loop — GTM Infinite Loop"** — 8 หลักการ (Understand→Restore→Defect→Eliminate→SetCondition→Kaizen→Manage→Gate) เป็นวินัยต่อทุกงาน
+- **`BACKLOG.md` (ใหม่)** — roadmap แหล่งความจริงเดียว · seed B1-B5 (`/done` save-raw, streak, check-back ✅/❌, session-accountability, meal persist) + Discovered + Done
+- **`.claude/skills/health-dev-loop/SKILL.md` (ใหม่)** — 1 รอบ 1 item จาก BACKLOG · PLAN→SCOPE→BUILD→TEST→LEARN→SHIP→LOOP · รัน `/loop /health-dev-loop`
+- **gate ปรับเป็นของจริง:** `python morning_digest.py` (dry-run) + `node --check cf-worker/src/index.js` + sync 2 ที่ (dict↔worker)
+- **autonomy:** full-auto commit master · **ห้าม auto-push/deploy/secret** (outward-facing → handoff/STOP) · stop conditions: SECRET/DESIGN/GATE/TEST/DONE
+- เป็น docs/process + skill เท่านั้น — worker/digest source ไม่เปลี่ยน
+
+---
+
 ## วิธี Deploy อัพเดต
 
 ```bash
@@ -357,4 +389,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-06-20 — adherence v1 (zone/gap) + homework /done coach-comment (evening cron); receipt Mini App; morning poll
+## Last updated: 2026-06-22 — GTM dev loop adopted (/health-dev-loop + BACKLOG.md + GTM operating method); KV --remote hook (poka-yoke); prior: adherence v1 + homework /done coach-comment

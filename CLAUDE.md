@@ -60,6 +60,9 @@
 - `.claude/agents/health-analyst.md` — subagent ดึง+วิเคราะห์ข้อมูล
 - `cf-worker/src/index.js` — Worker: proxy (Oura/Gemini) + Telegram bot + ใบเสร็จ Gemini + Mini App ตาราง (`/edit`,`/api/receipt`) + `/token`
 - `index.html` — dashboard เก่า (PWA) — legacy ยังใช้งานได้
+- `BACKLOG.md` — roadmap แหล่งความจริงเดียวของ `/health-dev-loop` (queue/done/discovered)
+- `.claude/skills/health-dev-loop/SKILL.md` — autonomous dev loop (1 รอบ 1 งานจาก BACKLOG) · รัน `/loop /health-dev-loop`
+- `.claude/settings.json` + `.claude/hooks/check-wrangler-kv-remote.py` — PreToolUse hook บังคับ `wrangler kv --remote` (poka-yoke)
 
 ## "แผนวันนี้" ทำงานยังไง
 แผนซ้อมฝังใน `morning_digest.py` (`W1_BY_DATE`, `WEEKS`, `W7_BY_DATE`)
@@ -76,6 +79,23 @@
 
 > ⚠️ แก้ตารางซ้อม → sync **2 ที่**: `morning_digest.py` (dict) + `cf-worker/src/index.js` (`/plan`,`/today`)
 > 💸 **กฎ: ทุก call ที่เสียเงิน (Gemini เท่านั้น — Oura/Strava/Garmin/Telegram ฟรี) ต้องโชว์ราคา** — เรียกผ่าน `usageLine(env, usage)` ต่อท้ายข้อความเสมอ (โชว์ tokens + ฿ ครั้งนี้ + ยอดสะสม) และนับเข้า `/token`. ฟีเจอร์ใหม่ที่เรียก Gemini = ห้ามลืม usageLine
+> 🔍 **ตรวจ KV ของจริง = ต้องใส่ `--remote` เสมอ** — `wrangler kv key get/list` **ดีฟอลต์อ่าน local store** (miniflare ของ `wrangler dev`) ซึ่งเป็นข้อมูลคนละชุดกับที่บอตโปรดักชันใช้. ตัวอย่างที่เคยพลาด: อ่าน `hw:*` แบบ local เห็น record ทดสอบเก่า แล้วฟันธงผิดว่า "ผู้ใช้ไม่ได้ส่งการบ้าน" ทั้งที่ `/homework` (โปรดักชัน) มีจริง. **เทียบกับสิ่งที่ผู้ใช้เห็นในเทเลแกรมเป็น ground truth — ถ้าขัดกัน ให้สงสัย read-path ของเราก่อน อย่าสงสัยผู้ใช้**
+> 🛡️ **บังคับด้วย hook แล้ว:** `.claude/settings.json` (PreToolUse/Bash → `.claude/hooks/check-wrangler-kv-remote.py`) จะ **block ทุกคำสั่ง `wrangler kv` ที่ไม่มี `--remote`/`--local`/`--preview`** — เติม `--remote` (ข้อมูลจริง) หรือ `--local` (ตั้งใจอ่าน local). แก้เกณฑ์/ปิด: `/hooks` หรือแก้ไฟล์ทั้งสอง
+
+## Dev Operating Loop — GTM Infinite Loop (วินัยต่อทุกงาน)
+> ปรับมาจาก BMA-Plan `AGENTS.md` · ใช้กับทุกงานแก้/สร้าง ไม่ว่าจะรันผ่าน `/health-dev-loop` หรือทำมือ
+
+ทุกครั้งก่อนแก้ไฟล์/สรุปผล เดินตาม 8 หลักการ:
+1. **Understand condition** — อ่านสถานะจริงก่อน (`PROJECT_LOG.md` ล่าสุด, `BACKLOG.md`, git, โค้ดที่จะแตะ) · ห้ามเริ่มจากความจำล้วน · เทียบ ground truth จริง (เช่น `/homework` ในเทเลแกรม) อย่าเชื่อ read-path ตัวเองถ้าขัดกับสิ่งที่ผู้ใช้เห็น
+2. **Restoration** — ถ้า workflow หลักพัง (digest cron, `/today`/`/plan`/`/done` ในบอท, แผนวันนี้เพี้ยน) = งานกู้ก่อน ไม่ใช่เพิ่มฟีเจอร์
+3. **Defect factor analysis** — ระบุ root cause ก่อนแก้ (เช่น environment mismatch=local/remote, plan-sync ไม่ตรง 2 ที่, secret หาย, stale doc)
+4. **Eliminate** — แก้ root cause ให้แคบสุด + เพิ่ม guard เมื่อทำได้ (เช่น hook poka-yoke) · ไม่แก้ doc ให้ดูผ่านแทนแก้จริง
+5. **Set condition** — lock มาตรฐานใหม่: `PROJECT_LOG.md` (section ตามวันที่) + `CLAUDE.md` (ถ้าเปลี่ยนสถาปัตยกรรม/secret/ไฟล์) + memory · บอกว่าเปลี่ยนอะไร test อะไรผ่าน gap เหลืออะไร
+6. **Kaizen** — ปรับให้ดีขึ้นเฉพาะใน scope (อย่าใช้เป็นข้ออ้างขยายงาน)
+7. **Condition management** — ปิดงานต้องชัด: PASS/FAIL · test ที่รัน · ไฟล์ที่แตะ · known gaps + next action · ถ้า docs-only ยืนยัน source ไม่เปลี่ยน
+8. **Pre-release gate** — ก่อนของออกสู่ outward-facing (deploy worker, ส่ง Telegram จริง, ตั้ง secret) = หยุดขออนุมัติ/ทดสอบก่อน ไม่ทำเงียบ ๆ
+
+> 🔁 **Autonomous:** `/health-dev-loop` = 1 รอบ 1 งานจาก `BACKLOG.md` (PLAN→SCOPE→BUILD→TEST→LEARN→SHIP→LOOP) · รันต่อเนื่อง `/loop /health-dev-loop` · gate = `python morning_digest.py` (dry-run) + `node --check cf-worker/src/index.js` · full-auto commit master, **ไม่ auto-push/deploy/secret**
 
 ## Legacy / สิ่งที่เลิกใช้
 - ~~`.github/workflows/log-garmin.yml`~~ — **ปลดระวางแล้ว** (cron 15 นาทีเขียน Google Sheet ที่ fail เงียบ: Garmin บล็อก CI + secrets `GCP_SA_KEY`/`SHEET_ID` ไม่เคยตั้ง)

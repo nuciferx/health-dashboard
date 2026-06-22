@@ -338,6 +338,18 @@ SHEET_ID
 
 ---
 
+## Update: 2026-06-22 (c) — [/health-dev-loop รอบ 1] B6: flag deep/REM สั้น + หาเหตุ ใน digest
+
+งานแรกที่ทำผ่าน autonomous loop (จาก /idea 2026-06-22):
+- `morning_digest.py` `fetch_oura`: ดึง `deep_sleep_duration`/`rem_sleep_duration` → `deep_h`/`rem_h`
+- `build_message`: บรรทัด `🛌 deep Xh · REM Yh` (🔴 ถ้า deep<0.9h หรือ REM<1.0h) + ธงเตือน "deep/REM สั้น (อาจจาก เครียดเมื่อคืน/readiness ต่ำ)" — rule-based, ไม่มี AI/Gemini, เข้าปรัชญา digest (fact+flag)
+- **TEST:** py_compile OK · dry-run แสดง `🛌 deep 0.5h 🔴 · REM 0.7h 🔴` + ธง (วันนี้ไม่เครียด→ไม่ใส่เหตุ ซื่อตรง) · ไม่แตะ worker
+- **SCOPE decisions:** digest (ไม่ใช่ /health) เพราะเป็น fact+flag · v1 = stress+readiness เป็นเหตุ (มีข้อมูลจริง)
+- **Discovered → BACKLOG:** D1 worker /today parity · D2 ตัวแปรเหตุเพิ่ม (alcohol/late-eat/HRV-dip) · D3 คาลิเบรตเกณฑ์ตาม baseline
+- **handoff:** ฟีเจอร์อยู่ใน digest cron 6 โมงอัตโนมัติ ไม่ต้อง deploy · จะเห็นผลจริงรอบ digest พรุ่งนี้
+
+---
+
 ## วิธี Deploy อัพเดต
 
 ```bash

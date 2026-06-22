@@ -16,10 +16,15 @@
 
 ## Discovered backlog (งานที่ loop เจอระหว่างทำ — เติมที่ step 5 LEARN)
 
-_(ว่าง — เติมเมื่อ /health-dev-loop เจอปัญหาใหม่)_
+| # | งาน | สถานะ | จาก | หมายเหตุ |
+|---|-----|------|-----|---------|
+| D1 | worker `/today` parity: โชว์ deep/REM flag เหมือน digest | queued | B6 | ตอนนี้ digest-only (สอดคล้อง asymmetry เดิมที่ worker ไม่มี stress) · ทำเมื่ออยากให้ /today ครบ |
+| D2 | ตัวแปรเหตุเพิ่ม: alcohol flag, late eating, HRV-dip กลางดึก | queued | B6 | ต้องหา data source ก่อน (Oura ไม่มีตรง ๆ) |
+| D3 | คาลิเบรต DEEP_MIN/REM_MIN ตาม baseline นักกีฬา (ตอนนี้ fix 0.9/1.0h) | queued | B6 | อาจใช้ค่าเฉลี่ย 14 วันแทน absolute |
 
 ## Done (ล่าสุดอยู่บน)
 
 | # | งาน | hash | วันที่ |
 |---|-----|------|-------|
+| B6 | flag deep/REM สั้น + หาเหตุ (stress/readiness) ใน digest | _(pending commit)_ | 2026-06-22 |
 | K0 | kaizen: KV `--remote` hook (poka-yoke) + GTM docs + รับ dev loop | 2026-06-22 | 2026-06-22 |

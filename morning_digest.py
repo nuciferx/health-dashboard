@@ -152,6 +152,7 @@ def fetch_oura(token, today):
     start = (today - timedelta(days=8)).isoformat()
     end = today.isoformat()
     out = {"readiness": None, "sleep_score": None, "sleep_h": None,
+           "deep_h": None, "rem_h": None,
            "hrv": None, "hrv_avg7": None, "rhr": None, "rhr_avg7": None,
            "stress_summary": None, "recovery_min": None, "resilience": None,
            "contrib": {}}
@@ -203,6 +204,10 @@ def fetch_oura(token, today):
         out["sleep_h"] = round(dur / 3600, 1) if dur else None
         out["hrv"] = today_s.get("average_hrv")
         out["rhr"] = today_s.get("lowest_heart_rate")
+        deep = today_s.get("deep_sleep_duration")
+        rem = today_s.get("rem_sleep_duration")
+        out["deep_h"] = round(deep / 3600, 1) if deep else None
+        out["rem_h"] = round(rem / 3600, 1) if rem else None
 
     # ค่าเฉลี่ย 7 วันก่อนหน้า (ไม่รวมวันนี้) สำหรับ trend
     prev = [v for k, v in by_day.items() if k != today.isoformat()]
@@ -471,6 +476,27 @@ def build_message(today, oura, activity, plan, gwell=None, review=None):
         r1.append(f"❤️ RHR {oura['rhr']}{arrow(oura['rhr'], oura['rhr_avg7'])}")
     if r1:
         L.append(" · ".join(r1))
+
+    # บรรทัด 1.5: ระยะนอนลึก/REM + หาเหตุถ้าไม่พอ (idea 2026-06-22 — ดู BACKLOG B6)
+    deep_h, rem_h = oura.get("deep_h"), oura.get("rem_h")
+    if deep_h is not None or rem_h is not None:
+        DEEP_MIN, REM_MIN = 0.9, 1.0   # ชม. · ต่ำกว่านี้ = "ไม่พอ" (เกณฑ์เริ่มต้น ปรับได้)
+        deep_short = deep_h is not None and deep_h < DEEP_MIN
+        rem_short = rem_h is not None and rem_h < REM_MIN
+        seg = []
+        if deep_h is not None:
+            seg.append(f"deep {deep_h}h" + (" 🔴" if deep_short else ""))
+        if rem_h is not None:
+            seg.append(f"REM {rem_h}h" + (" 🔴" if rem_short else ""))
+        L.append("🛌 " + " · ".join(seg))
+        if deep_short or rem_short:
+            cause = []
+            if oura.get("stress_summary") == "stressful":
+                cause.append("เครียดเมื่อคืน")
+            if oura.get("readiness") is not None and oura["readiness"] < 55:
+                cause.append("readiness ต่ำ")
+            short_what = "/".join(w for w, s in (("deep", deep_short), ("REM", rem_short)) if s)
+            flags.append(f"{short_what} สั้น" + (f" (อาจจาก {', '.join(cause)})" if cause else ""))
 
     # บรรทัด 2: Readiness · Resilience
     r2 = []

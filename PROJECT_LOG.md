@@ -350,6 +350,18 @@ SHEET_ID
 
 ---
 
+## Update: 2026-07-25 — ปรับแผน 14 วันสุดท้าย (จากวิเคราะห์ /health)
+
+**ข้อมูลที่พบ (Oura 14 วัน + Strava 12-25 ก.ค.):** RACE SIM 18 ก.ค. ทำจริง 9.2 กม./+549 ม. (แผน 30/+2,000 — Go/No-Go ไม่เคยทดสอบ) · ปริมาณ ~19 กม. ≈ 25-30% ของแผน · ขึ้นเขา avgHR 167-175 เกินกฎ ≤150 · อัตราไต่ ~400 ม./ชม. @HR~170 · นอนเฉลี่ย 4.9 ชม. · resilience "limited" ตั้งแต่ 18 ก.ค. · จุดบวก: วิ่งราบ 23 ก.ค. avgHR 147 คุมโซนได้ · วันนี้ readiness 68 / HRV 33 / RHR 63 ดีสุดในรอบ 2 สัปดาห์
+
+**ปรับแผน (sync 3 ที่: `CM6_i2_ตารางซ้อม.md` + `morning_digest.py` + `cf-worker/src/index.js`):**
+- OVERRIDE 25-26 ก.ค. = 🎯 MINI RACE SIM 15-18 กม./+800-1,000 (เดินขึ้น ≤150 เข้ม + ระบบกิน/น้ำ/เป้เต็ม แทน sim ที่พลาด) + วันฟื้น
+- W7 เทเปอร์: เพิ่มโฟกัสนอน ≥7 ชม./คืน (เลเวอร์หลัก — จาก 4.9) · 1 ส.ค. = dress rehearsal เต็มรูปแบบ · HR cap กำกับทุกวัน
+- เป้าวันแข่งรีเซ็ต: จบก่อน cutoff ไม่เจ็บ (~12:30-13:00) · pacing table ใหม่ (สะสม 3:15/6:30/9:45/12:45)
+
+**Test:** `python morning_digest.py` dry-run PASS (โชว์ MINI RACE SIM ถูกวัน) · `node --check cf-worker/src/index.js` PASS
+**Gap:** ยังไม่ push / ยังไม่ deploy worker (รออนุมัติ) — digest cron บน GitHub + `/plan` บน worker จะยังเห็นแผนเก่าจนกว่าจะ push+deploy · memory `cm6-i2-training` สร้างใหม่แล้ว (ของเดิมหาย)
+
 ## วิธี Deploy อัพเดต
 
 ```bash
@@ -401,4 +413,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-06-22 — GTM dev loop adopted (/health-dev-loop + BACKLOG.md + GTM operating method); KV --remote hook (poka-yoke); prior: adherence v1 + homework /done coach-comment
+## Last updated: 2026-07-25 — ปรับแผน 14 วันสุดท้าย (mini race sim 25-26 ก.ค. + เทเปอร์เน้นนอน + เป้าแข่งรีเซ็ต); prior: GTM dev loop adopted + KV --remote hook

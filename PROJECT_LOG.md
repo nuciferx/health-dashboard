@@ -362,6 +362,15 @@ SHEET_ID
 **Test:** `python morning_digest.py` dry-run PASS (โชว์ MINI RACE SIM ถูกวัน) · `node --check cf-worker/src/index.js` PASS
 **Gap:** ยังไม่ push / ยังไม่ deploy worker (รออนุมัติ) — digest cron บน GitHub + `/plan` บน worker จะยังเห็นแผนเก่าจนกว่าจะ push+deploy · memory `cm6-i2-training` สร้างใหม่แล้ว (ของเดิมหาย)
 
+## Update: 2026-07-27 — MINI SIM พลาด → ใส่ time-on-feet 4-5 ชม. (1 ส.ค.) + deploy worker สำเร็จ
+
+**สิ่งที่พบ:** MINI RACE SIM 25-26 ก.ค. ไม่เกิด — สุดสัปดาห์เป็นวิ่งราบล้วน (26 ก.ค. 4 กม., 27 ก.ค. 8.5 กม. avg HR 143 คุมโซนดี) · ช่องว่างที่เหลือ = การไต่ + time-on-feet ล้วน
+**ผู้ใช้ขอ:** time-on-feet 4-5 ชม.
+**ปรับ (sync 3 ไฟล์):** เปลี่ยน 1 ส.ค. (เสาร์, 7 วันก่อนแข่ง) จาก dress rehearsal เบา +400 → **🥾 Time-on-feet 4-5 ชม. (long session ตัวสุดท้าย + dress rehearsal รวมกัน)** เดินเป็นหลัก vertical +500-800 พอ (กันเอ็น) ระบบเต็มเหมือนวันแข่ง avg ≤145 · taper 2-7 ส.ค. เน้นฟื้นจาก long session (โดยเฉพาะ 2-3 ส.ค.) · แก้ day label 1 ส.ค. = เสาร์ (เดิมเขียน ศ ผิด)
+**Test:** plan_for(1 ส.ค.)/plan_for(2 ส.ค.) ถูกต้อง · node --check PASS
+**Deploy:** wrangler login (ผ่านหลัง timeout 3 ครั้ง — callback localhost:8976 ต้องรันในเทอร์มินัลผู้ใช้/นอก sandbox) → **`wrangler deploy` สำเร็จ version 388b711a** (บอท /plan /today /week ใช้แผนใหม่แล้ว) · account ideaplanstudio@gmail.com
+**Open decision:** ผู้ใช้เลือกวันได้ — ถ้าอยากได้ recovery buffer มากขึ้นย้าย 4-5 ชม. ไป 30 ก.ค. (พฤ, 9 วันก่อนแข่ง) แทน 1 ส.ค. (7 วัน)
+
 ## วิธี Deploy อัพเดต
 
 ```bash
@@ -413,4 +422,4 @@ health-dashboard/
 
 ---
 
-## Last updated: 2026-07-25 — ปรับแผน 14 วันสุดท้าย (mini race sim 25-26 ก.ค. + เทเปอร์เน้นนอน + เป้าแข่งรีเซ็ต); prior: GTM dev loop adopted + KV --remote hook
+## Last updated: 2026-07-27 — sim พลาด → ใส่ time-on-feet 4-5 ชม. (1 ส.ค.) + deploy worker สำเร็จ (388b711a); prior: ปรับแผน 14 วันสุดท้าย 25 ก.ค.
